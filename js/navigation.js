@@ -48,10 +48,10 @@ class NavigationManager {
             handler: () => this.showGame('enigma-protocol')
         });
         
-        this.routes.set('games/sorting-chef', {
+        this.routes.set('games/bubble-sort-chef', {
             element: 'game-container',
-            title: 'The Sorting Chef - DSAG',
-            handler: () => this.showGame('sorting-chef')
+            title: 'The Bubble Sort Chef - DSAG',
+            handler: () => this.showGame('bubble-sort-chef')
         });
         
         this.routes.set('learning-path', {
@@ -240,7 +240,7 @@ class NavigationManager {
             'cosmic-rift': 'Cosmic Rift Scanners',
             'recursionauts': 'Recursionauts',
             'enigma-protocol': 'The Enigma Protocol',
-            'sorting-chef': 'The Sorting Chef'
+            'bubble-sort-chef': 'The Bubble Sort Chef'
         };
         
         const title = gameTitles[gameId];

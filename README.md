@@ -26,7 +26,7 @@ DSAG (Data Structures & Algorithms as Games) transforms computer science educati
 - 🚀 **Two-Pointer Technique** - Cosmic Rift Scanners
 - 🔄 **Recursion & Call Stack** - Recursionauts  
 - 🎯 **Binary Search** - The Enigma Protocol
-- 👨‍🍳 **All 5 Sorting Algorithms** - The Sorting Chef
+- 👨‍🍳 **Bubble Sort Algorithm** - The Bubble Sort Chef
 
 ## 🎯 Key Features
 
@@ -72,10 +72,10 @@ DSAG (Data Structures & Algorithms as Games) transforms computer science educati
 **Theme**: WWII code-breaking and decryption  
 **Learning**: Efficient search in sorted data  
 
-### 4. The Sorting Chef
-**Algorithm**: All 5 Major Sorting Algorithms  
+### 4. The Bubble Sort Chef
+**Algorithm**: Bubble Sort  
 **Theme**: Kitchen and cooking management  
-**Learning**: Bubble, Selection, Insertion, Merge, and Quick Sort  
+**Learning**: Bubble Sort algorithm with interactive decision-making  
 
 ## 🚀 Getting Started
 

@@ -48,11 +48,11 @@ class GameManager {
             color: 'from-amber-500 to-orange-500'
         });
         
-        this.gameConfigs.set('sorting-chef', {
-            title: 'The Sorting Chef',
-            file: 'sorting-chef.html',
-            description: 'Master All 5 Sorting Algorithms',
-            difficulty: 'Beginner to Advanced',
+        this.gameConfigs.set('bubble-sort-chef', {
+            title: 'The Bubble Sort Chef',
+            file: 'bubble-sort-chef.html',
+            description: 'Master Bubble Sort Algorithm',
+            difficulty: 'Beginner',
             rating: 5,
             emoji: '👨‍🍳',
             color: 'from-green-500 to-emerald-500'
