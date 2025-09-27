@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursionauts: The Echo Chamber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Source Code Pro', monospace;
+            overflow: hidden;
+            background-color: #0d0d1a;
+            color: #e0e0ff;
+        }
+        #game-wrapper {
+            background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #111122;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4), inset 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        canvas {
+            background-color: transparent;
+            display: block;
+        }
+        .ui-element {
+            background-color: rgba(13, 13, 26, 0.8);
+            border: 1px solid #00ffff88;
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        h1, h2, h3 {
+             font-family: 'Orbitron', sans-serif;
+             text-shadow: 0 0 5px #a29bfe;
+        }
+        button {
+            transition: all 0.2s ease;
+            font-family: 'Orbitron', sans-serif;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+        .modal {
+            display: none;
+            background-color: rgba(13, 13, 26, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        .modal-content {
+            animation: fadeIn 0.3s ease-out;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInFromTop {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.9); }
+        }
+        .stack-item-enter { animation: slideInFromTop 0.3s ease-out forwards; }
+        .stack-item-exit { animation: popOut 0.3s ease-out forwards; }
+
+        .call-stack-container { font-size: 0.8rem; }
+        .stack-item {
+            border: 1px solid #444; background-color: #2a2a4a;
+            margin-bottom: 4px; padding: 4px 8px; border-radius: 4px;
+            text-align: center; transition: all 0.3s ease; transform-origin: top;
+        }
+        .stack-item.active { border-color: #00ffff; background-color: #3a3a6a; font-weight: bold; }
+        .pseudocode {
+            background: #111122; padding: 1rem; border-radius: 8px;
+            text-align: left; font-size: 0.9rem; white-space: pre; border: 1px solid #00ffff88;
+        }
+        #overflow-meter { background-color: #2a2a4a; border: 1px solid #444; }
+        #overflow-fill { background-color: #00ffff; transition: height 0.3s ease, background-color 0.3s ease; }
+        #overflow-fill.warning { background-color: #ff0000; }
+        #memory-warning { display: none; color: #ff0000; animation: blink 1s infinite; text-shadow: 0 0 5px #ff0000; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center h-screen m-0 p-4">
+
+    <div id="game-wrapper" class="w-full max-w-6xl aspect-video rounded-lg p-2 flex">
+        <div id="game-container" class="w-full h-full relative">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="w-56 ml-2 flex">
+            <div class="w-48 flex flex-col call-stack-container">
+                <h2 class="text-lg text-center mb-2 text-cyan-300">CALL STACK</h2>
+                <div id="call-stack-display" class="flex-grow flex flex-col-reverse p-2 bg-black bg-opacity-20 rounded-md"></div>
+            </div>
+            <div class="w-8 ml-2 flex flex-col items-center">
+                 <h2 class="text-xs text-center mb-2 text-cyan-300 transform -rotate-90 origin-center translate-y-8 whitespace-nowrap">SYS MEM</h2>
+                 <div id="overflow-meter" class="flex-grow w-4 rounded-full flex flex-col-reverse">
+                    <div id="overflow-fill" class="w-full rounded-full" style="height: 0%;"></div>
+                 </div>
+                 <div id="memory-warning" class="text-xs text-center mt-2 font-bold">CRITICAL</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between w-full max-w-6xl text-sm">
+        <div class="flex items-center space-x-4">
+            <div id="level-display" class="ui-element">Level: 1</div>
+            <div id="depth-display" class="ui-element">Depth: 0</div>
+            <div id="sector-display" class="ui-element">Sector: Linear</div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="instructions-button" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded-lg shadow-md">How to Play</button>
+            <button id="restart-button" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg shadow-md">Restart Level</button>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="modal-container">
+        <div id="intro-modal" class="modal fixed inset-0 justify-center items-center z-50">
+             <div class="modal-content bg-gray-900 p-8 rounded-lg shadow-2xl max-w-xl w-full text-center">
+                <h2 class="text-3xl font-bold mb-4 text-cyan-400">MISSION BRIEFING</h2>
+                <p class="mb-2 text-lg">Year 2525. A sentient AI, the 'System Oracle,' has fallen into a recursive corruption loop.</p>
+                <p class="mb-6">You are a <span class="font-bold text-cyan-300">Recursionaut</span>, a specialist who dives into the very logic of the machine. Your mission: navigate the Echo Chambers of its mind, find the Base Case Kernels, and collapse the infinite loops before the Oracle's consciousness shatters completely. The fate of the network is in your hands.</p>
+                <button id="start-mission-button" class="mt-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-lg">Accept Mission</button>
+            </div>
+        </div>
+        <div id="instructions-modal" class="modal fixed inset-0 justify-center items-center z-50">
+             <div class="modal-content bg-gray-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center">
+                <h2 class="text-3xl font-bold mb-4 text-cyan-400">Mission Parameters</h2>
+                <p class="mb-2 text-left">Your goal is to reach the <span class="text-green-400 font-bold">Green Exit Kernel</span>.</p>
+                <ul class="list-disc list-inside text-left mb-4 space-y-2">
+                    <li>Use <span class="font-bold">A/D</span> or <span class="font-bold">Arrow Keys</span> to move.</li>
+                    <li>Press <span class="font-bold">W</span> or <span class="font-bold">Space</span> to jump.</li>
+                    <li><span class="text-cyan-400 font-bold">Blue Data Blocks</span> are recursive calls.</li>
+                    <li><span class="text-yellow-400 font-bold">Yellow Platforms</span> are "Base Cases" that resolve the deepest call.</li>
+                </ul>
+                <button id="close-modal-button" class="mt-4 bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-lg">Understood!</button>
+            </div>
+        </div>
+        <div id="level-complete-modal" class="modal fixed inset-0 justify-center items-center z-50">
+            <div class="modal-content bg-gray-900 p-8 rounded-lg shadow-2xl max-w-3xl w-full text-center">
+                 <h2 id="level-complete-title" class="text-3xl font-bold mb-4 text-green-400">System Restored!</h2>
+                 <p id="level-complete-text" class="mb-6"></p>
+                 <div class="grid grid-cols-2 gap-6 text-left">
+                     <div>
+                         <h3 class="text-cyan-300 mb-2">System Report</h3>
+                         <div id="level-stats" class="text-sm bg-black bg-opacity-20 p-4 rounded space-y-2"></div>
+                     </div>
+                     <div>
+                         <h3 class="text-cyan-300 mb-2">Execution Trace</h3>
+                         <div id="modal-pseudocode" class="pseudocode text-sm"></div>
+                     </div>
+                 </div>
+                 <button id="next-level-button" class="mt-6 bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg">Continue Mission</button>
+            </div>
+        </div>
+        <div id="fail-modal" class="modal fixed inset-0 justify-center items-center z-50">
+             <div class="modal-content bg-gray-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-2 border-red-500">
+                 <h2 id="fail-title" class="text-3xl font-bold mb-4 text-red-500">CRITICAL ERROR</h2>
+                 <p id="fail-text" class="mb-6 text-lg"></p>
+                 <button id="fail-retry-button" class="mt-4 bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg">Retry Level</button>
+             </div>
+        </div>
+        <div id="sector-intro-modal" class="modal fixed inset-0 justify-center items-center z-50">
+             <div class="modal-content bg-gray-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-2 border-yellow-400">
+                 <h2 id="sector-title" class="text-3xl font-bold mb-4 text-yellow-400">New Anomaly Detected</h2>
+                 <p id="sector-text" class="mb-6 text-lg"></p>
+                 <button id="sector-continue-button" class="mt-4 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-6 rounded-lg">Engage</button>
+             </div>
+        </div>
+    </div>
+
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+
+        const ui = {
+            level: document.getElementById('level-display'), depth: document.getElementById('depth-display'),
+            sector: document.getElementById('sector-display'), callStack: document.getElementById('call-stack-display'),
+            restartBtn: document.getElementById('restart-button'), instructionsModal: document.getElementById('instructions-modal'),
+            instructionsBtn: document.getElementById('instructions-button'), closeModalBtn: document.getElementById('close-modal-button'),
+            levelCompleteModal: document.getElementById('level-complete-modal'), levelCompleteTitle: document.getElementById('level-complete-title'),
+            levelCompleteText: document.getElementById('level-complete-text'), levelStats: document.getElementById('level-stats'),
+            modalPseudocode: document.getElementById('modal-pseudocode'), nextLevelBtn: document.getElementById('next-level-button'),
+            failModal: document.getElementById('fail-modal'), failTitle: document.getElementById('fail-title'),
+            failText: document.getElementById('fail-text'), failRetryBtn: document.getElementById('fail-retry-button'),
+            sectorIntroModal: document.getElementById('sector-intro-modal'), sectorTitle: document.getElementById('sector-title'),
+            sectorText: document.getElementById('sector-text'), sectorContinueBtn: document.getElementById('sector-continue-button'),
+            overflowFill: document.getElementById('overflow-fill'), memoryWarning: document.getElementById('memory-warning'),
+            introModal: document.getElementById('intro-modal'), startMissionBtn: document.getElementById('start-mission-button'),
+        };
+        
+        let audioCtx;
+        let gameState = 'playing'; // playing, paused, complete
+        const MAX_DEPTH = 8;
+        let totalCallsMade = 0;
+        let level7Retries = 0; // Track retries for the infinite trap level
+        let unlockedLevels = 1;
+        let isFirstLoad = true;
+
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            
+            switch(type) {
+                case 'jump': osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); break;
+                case 'enter': osc.type = 'sine'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.4); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4); break;
+                case 'exit': osc.type = 'square'; osc.frequency.setValueAtTime(440, audioCtx.currentTime); setTimeout(() => osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.1), 100); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+                case 'win': osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); setTimeout(() => osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1), 100); setTimeout(() => osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2), 200); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5); break;
+                case 'fail': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.5); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5); break;
+                case 'warn': osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(880, audioCtx.currentTime + 0.5); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5); break;
+            }
+            
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        }
+        
+        ui.startMissionBtn.onclick = () => {
+            ui.introModal.style.display = 'none';
+            ui.instructionsModal.style.display = 'flex';
+            isFirstLoad = false;
+        };
+        ui.instructionsBtn.onclick = () => { ui.instructionsModal.style.display = 'flex'; initAudio(); gameState = 'paused'; };
+        ui.closeModalBtn.onclick = () => { ui.instructionsModal.style.display = 'none'; gameState = 'playing'; };
+        ui.nextLevelBtn.onclick = () => { ui.levelCompleteModal.style.display = 'none'; nextLevel(); };
+        ui.sectorContinueBtn.onclick = () => { ui.sectorIntroModal.style.display = 'none'; gameState = 'playing'; };
+
+        const GRAVITY = 0.6, PLAYER_SPEED = 5, JUMP_FORCE = 12;
+        let particles = [], currentLevelIndex = 0, recursionStack = [], gameTime = 0;
+        const keys = { left: false, right: false, up: false };
+
+        const PLATFORM_TYPES = { NORMAL: 'normal', RECURSIVE: 'recursive', BASE_CASE: 'base_case', EXIT: 'exit' };
+        const RECURSION_TYPES = { LINEAR: 'Linear', BRANCHING: 'Branching', INFINITE_TRAP: 'Infinite Trap', DIVIDE_CONQUER: 'Divide & Conquer' };
+        const COLORS = { [PLATFORM_TYPES.NORMAL]: '#888c8f', [PLATFORM_TYPES.RECURSIVE]: '#00ffff', [PLATFORM_TYPES.BASE_CASE]: '#ffff00', [PLATFORM_TYPES.EXIT]: '#00ff7f', PLAYER: '#ff00ff', };
+
+        const levels = [
+            // Sector 1: Linear Recursion
+            { minCalls: 1, type: RECURSION_TYPES.LINEAR, playerStart: { x: 50, y: 450 }, platforms: [{ x: 0, y: 550, width: 200, height: 50, type: PLATFORM_TYPES.NORMAL }, { x: 250, y: 480, width: 100, height: 20, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-1', x: 400, y: 420, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 600, y: 350, width: 150, height: 20, type: PLATFORM_TYPES.EXIT }], baseCasePlatform: { x: 700, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            { minCalls: 1, type: RECURSION_TYPES.LINEAR, playerStart: { x: 50, y: 450 }, platforms: [{ x: 0, y: 550, width: 800, height: 50, type: PLATFORM_TYPES.NORMAL }, { x: 200, y: 450, width: 20, height: 100, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-1', x: 300, y: 480, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 500, y: 400, width: 150, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 50, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            { minCalls: 1, type: RECURSION_TYPES.LINEAR, playerStart: { x: 50, y: 50 }, platforms: [ { x: 0, y: 100, width: 150, height: 20, type: PLATFORM_TYPES.NORMAL }, { x: 700, y: 550, width: 100, height: 50, type: PLATFORM_TYPES.EXIT }, { x: 200, y: 100, width: 20, height: 480, type: PLATFORM_TYPES.NORMAL }, { x: 0, y: 580, width: 800, height: 20, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-1', x: 50, y: 300, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE } ], baseCasePlatform: { x: 700, y: 150, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            // Sector 2: Branching Recursion
+            { minCalls: 2, type: RECURSION_TYPES.BRANCHING, playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 550, width: 800, height: 50, type: PLATFORM_TYPES.NORMAL }, { x: 350, y: 480, width: 100, height: 20, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-L', x: 150, y: 400, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { id: 'rec-R', x: 550, y: 400, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 350, y: 300, width: 100, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 700, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            { minCalls: 2, type: RECURSION_TYPES.BRANCHING, playerStart: { x: 50, y: 450 }, platforms: [ { x: 0, y: 550, width: 200, height: 50, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-1', x: 250, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { id: 'rec-2', x: 450, y: 450, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 650, y: 400, width: 150, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 50, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            { minCalls: 2, type: RECURSION_TYPES.BRANCHING, playerStart: { x: 750, y: 50 }, platforms: [ { x: 700, y: 100, width: 100, height: 20, type: PLATFORM_TYPES.NORMAL }, { x: 0, y: 580, width: 800, height: 20, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-A', x: 500, y: 200, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { id: 'rec-B', x: 200, y: 350, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 50, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 400, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            // Infinite Recursion Trap
+            { minCalls: 0, type: RECURSION_TYPES.INFINITE_TRAP, playerStart: { x: 50, y: 450 }, platforms: [ { x: 0, y: 550, width: 200, height: 50, type: PLATFORM_TYPES.NORMAL }, { id: 'rec-trap', x: 300, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE, isTrap: true }, { x: 600, y: 400, width: 100, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 700, y: 100, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } }, // Unreachable base case
+            // Sector 3: Divide & Conquer (Levels 8 and 10 fixed)
+            { minCalls: 2, type: RECURSION_TYPES.DIVIDE_CONQUER, playerStart: { x: 50, y: 50 }, platforms: [ { x: 0, y: 100, width: 380, height: 20, type: PLATFORM_TYPES.NORMAL }, { x: 420, y: 100, width: 380, height: 20, type: PLATFORM_TYPES.NORMAL }, { x: 390, y: 120, width: 20, height: 400, type: PLATFORM_TYPES.NORMAL, id: 'barrier' }, { id: 'rec-L', x: 100, y: 200, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { id: 'rec-R', x: 600, y: 200, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 350, y: 550, width: 100, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 400, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            { minCalls: 2, type: RECURSION_TYPES.DIVIDE_CONQUER, playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 550, width: 800, height: 50, type: PLATFORM_TYPES.NORMAL }, { x: 200, y: 300, width: 400, height: 20, type: PLATFORM_TYPES.NORMAL, id: 'barrier' }, { id: 'rec-L', x: 100, y: 500, width: 80, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { id: 'rec-R', x: 620, y: 500, width: 80, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 360, y: 250, width: 80, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 400, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+            { minCalls: 2, type: RECURSION_TYPES.DIVIDE_CONQUER, playerStart: { x: 50, y: 50 }, platforms: [ { x: 0, y: 100, width: 150, height: 20, type: PLATFORM_TYPES.NORMAL }, { x: 650, y: 100, width: 150, height: 20, type: PLATFORM_TYPES.NORMAL }, { x: 390, y: 120, width: 20, height: 480, type: PLATFORM_TYPES.NORMAL, id: 'barrier' }, { id: 'rec-L', x: 50, y: 300, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { id: 'rec-R', x: 650, y: 300, width: 100, height: 20, type: PLATFORM_TYPES.RECURSIVE }, { x: 350, y: 50, width: 100, height: 20, type: PLATFORM_TYPES.EXIT } ], baseCasePlatform: { x: 400, y: 500, width: 100, height: 20, type: PLATFORM_TYPES.BASE_CASE } },
+        ];
+        
+        class Particle {
+            constructor(x, y, color) { this.x = x; this.y = y; this.color = color; this.size = Math.random() * 3 + 1; this.life = 1; this.dx = (Math.random() - 0.5) * 3; this.dy = (Math.random() - 0.5) * 3; }
+            update() { this.x += this.dx; this.y += this.dy; this.life -= 0.02; }
+            draw(level) { ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.fillRect( this.x * level.scale + level.x, this.y * level.scale + level.y, this.size * level.scale, this.size * level.scale ); ctx.globalAlpha = 1; }
+        }
+        
+        class Player {
+            constructor(x, y) { this.x = x; this.y = y; this.width = 20; this.height = 20; this.dx = 0; this.dy = 0; this.onGround = false; }
+            update(platforms) {
+                if (keys.left) this.dx = -PLAYER_SPEED; else if (keys.right) this.dx = PLAYER_SPEED; else this.dx = 0;
+                if (keys.up && this.onGround) { this.dy = -JUMP_FORCE; this.onGround = false; playSound('jump'); for(let i=0; i<5; i++) particles.push(new Particle(this.x + this.width/2, this.y + this.height, COLORS.PLAYER)); }
+                this.dy += GRAVITY; this.x += this.dx; this.y += this.dy; this.onGround = false;
+                platforms.forEach(platform => {
+                    if (this.x < platform.x + platform.width && this.x + this.width > platform.x && this.y < platform.y + platform.height && this.y + this.height > platform.y) {
+                        const prevY = this.y - this.dy;
+                        if (prevY + this.height <= platform.y) { this.y = platform.y - this.height; this.dy = 0; this.onGround = true; handlePlatformInteraction(platform); }
+                        else if (prevY >= platform.y + platform.height) { this.y = platform.y + platform.height; this.dy = 0; }
+                        else { this.x = (this.dx > 0) ? platform.x - this.width : platform.x + platform.width; }
+                    }
+                });
+                if (this.x < 0) this.x = 0; if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+                if (this.y > canvas.height) {
+                    if (currentLevelIndex === 6) {
+                        handleLevel7Failure(false);
+                    } else {
+                        playSound('fail');
+                        loadLevel(currentLevelIndex);
+                    }
+                }
+            }
+            draw(level) { const { scale, x: offsetX, y: offsetY } = level; ctx.fillStyle = COLORS.PLAYER; ctx.shadowColor = COLORS.PLAYER; ctx.shadowBlur = 10; ctx.fillRect(this.x * scale + offsetX, this.y * scale + offsetY, this.width * scale, this.height * scale); ctx.shadowBlur = 0; }
+        }
+
+        function handlePlatformInteraction(platform) { if (gameState === 'playing') { switch (platform.type) { case PLATFORM_TYPES.RECURSIVE: enterRecursion(platform); break; case PLATFORM_TYPES.BASE_CASE: exitRecursion(); break; case PLATFORM_TYPES.EXIT: completeLevel(); break; } } }
+        
+        function handleLevel7Failure(isStackOverflow = false) {
+            level7Retries++;
+            gameState = 'paused';
+            playSound('fail');
+
+            if (isStackOverflow) {
+                ui.failTitle.textContent = "LESSON: STACK OVERFLOW";
+                ui.failText.textContent = "Critical Lesson: Recursion without a reachable base case will always consume all available memory and crash the system.";
+            } else {
+                ui.failTitle.textContent = "INVESTIGATION FAILED";
+                ui.failText.textContent = "You fell while investigating the anomaly. The goal is to understand *why* the recursion itself fails.";
+            }
+
+            if (level7Retries >= 2) {
+                ui.failText.textContent += "\n\nYou have successfully analyzed this fatal anomaly. It's time to proceed.";
+                ui.failRetryBtn.textContent = "Proceed to Next Sector";
+                ui.failRetryBtn.onclick = () => { ui.failModal.style.display = 'none'; nextLevel(); };
+            } else {
+                ui.failText.textContent += `\n\nYou have ${2 - level7Retries} attempt(s) left.`;
+                ui.failRetryBtn.textContent = "Retry Investigation";
+                ui.failRetryBtn.onclick = () => { ui.failModal.style.display = 'none'; loadLevel(currentLevelIndex); };
+            }
+            ui.failModal.style.display = 'flex';
+        }
+
+        function enterRecursion(sourcePlatform) {
+            if (recursionStack.length >= MAX_DEPTH) {
+                if (currentLevelIndex === 6) {
+                    handleLevel7Failure(true);
+                } else {
+                    playSound('fail');
+                    gameState = 'paused';
+                    ui.failTitle.textContent = "STACK OVERFLOW";
+                    ui.failText.textContent = "You delved too deep into the corrupted data without finding a base case. The system memory has overflowed, causing a critical crash.";
+                    ui.failRetryBtn.textContent = "Retry Level";
+                    ui.failRetryBtn.onclick = () => { ui.failModal.style.display = 'none'; loadLevel(currentLevelIndex); };
+                    ui.failModal.style.display = 'flex';
+                }
+                return;
+            }
+            playSound('enter'); totalCallsMade++;
+            const currentLevel = recursionStack[recursionStack.length - 1];
+            const newPlatforms = JSON.parse(JSON.stringify(currentLevel.platforms)).map(p => { if (p.id === sourcePlatform.id) p.type = PLATFORM_TYPES.NORMAL; return p; });
+            newPlatforms.push(JSON.parse(JSON.stringify(levels[currentLevelIndex].baseCasePlatform)));
+            const newLevel = { x: currentLevel.x + (sourcePlatform.x * currentLevel.scale), y: currentLevel.y + (sourcePlatform.y * currentLevel.scale), scale: currentLevel.scale * (sourcePlatform.width / canvas.width), player: new Player(currentLevel.playerStart.x, currentLevel.playerStart.y), platforms: newPlatforms, playerStart: currentLevel.playerStart, sourcePlatformId: sourcePlatform.id, recursionDepth: recursionStack.length };
+            recursionStack.push(newLevel); updateUI(true);
+        }
+
+        function exitRecursion() {
+            if (recursionStack.length > 1) {
+                playSound('exit');
+                const parentLevel = recursionStack[recursionStack.length - 2];
+                const exitedLevel = recursionStack[recursionStack.length - 1];
+                parentLevel.platforms.forEach(p => { if (p.id === exitedLevel.sourcePlatformId) p.type = PLATFORM_TYPES.NORMAL; });
+                if (levels[currentLevelIndex].type === RECURSION_TYPES.DIVIDE_CONQUER) {
+                    const isLeftSolved = !parentLevel.platforms.some(p => p.id === 'rec-L' && p.type === PLATFORM_TYPES.RECURSIVE);
+                    const isRightSolved = !parentLevel.platforms.some(p => p.id === 'rec-R' && p.type === PLATFORM_TYPES.RECURSIVE);
+                    if (isLeftSolved && isRightSolved) parentLevel.platforms = parentLevel.platforms.filter(p => p.id !== 'barrier');
+                }
+                updateUI(false, true); // Animate pop
+            }
+        }
+
+        function completeLevel() {
+            playSound('win'); gameState = 'paused';
+            unlockedLevels = Math.max(unlockedLevels, currentLevelIndex + 2);
+
+            if (currentLevelIndex === levels.length - 1) {
+                ui.levelCompleteTitle.textContent = "Congratulations, Recursionaut!";
+                ui.levelCompleteText.textContent = "You have mastered all recursion archetypes and restored the entire system.";
+                ui.nextLevelBtn.textContent = "Play Again";
+            } else {
+                 ui.levelCompleteTitle.textContent = "System Restored!";
+                 ui.levelCompleteText.textContent = `Data structure for Level ${currentLevelIndex + 1} has been stabilized.`;
+                 ui.nextLevelBtn.textContent = "Continue Mission";
+                 if(currentLevelIndex + 1 >= unlockedLevels) ui.nextLevelBtn.disabled = true; else ui.nextLevelBtn.disabled = false;
+            }
+            
+            const minCalls = levels[currentLevelIndex].minCalls;
+            const efficiency = minCalls > 0 ? (minCalls / totalCallsMade * 100).toFixed(0) : 100;
+            ui.levelStats.innerHTML = `<div>Archetype: <span class="font-bold text-cyan-300">${levels[currentLevelIndex].type}</span></div>
+                                     <div>Efficiency: <span class="font-bold text-cyan-300">${efficiency}%</span> (${totalCallsMade} calls vs ${minCalls} optimal)</div>
+                                     <div class="pt-2 text-yellow-400">Challenge: <span class="text-white">Solve with ${minCalls} calls or less.</span></div>`;
+
+            let pseudocode = `<span>function solve(level) {</span>\n<span class="text-yellow-400">  if (isBaseCase(level)) { return; }</span>`;
+            if (levels[currentLevelIndex].type === RECURSION_TYPES.BRANCHING || levels[currentLevelIndex].type === RECURSION_TYPES.DIVIDE_CONQUER) { pseudocode += `\n<span class="text-cyan-400">  solve(level.left);</span>\n<span class="text-cyan-400">  solve(level.right);</span>`; }
+            else { pseudocode += `\n<span class="text-cyan-400">  solve(newLevel);</span>`; }
+            pseudocode += `\n<span>}</span>`;
+            ui.modalPseudocode.innerHTML = pseudocode;
+            ui.levelCompleteModal.style.display = 'flex';
+        }
+
+        function nextLevel() {
+            currentLevelIndex = (currentLevelIndex + 1);
+            if(currentLevelIndex >= levels.length) currentLevelIndex = 0;
+            loadLevel(currentLevelIndex);
+        }
+
+        function showSectorIntro(sectorType) {
+            gameState = 'paused';
+            let title = "New Anomaly Detected";
+            let text = "";
+            switch(sectorType) {
+                case RECURSION_TYPES.BRANCHING:
+                    title = "Sector 2: Branching Anomaly";
+                    text = "Commander, the corruption is splitting. You'll need to resolve multiple recursive paths to proceed. Stabilize the Fibonacci core.";
+                    break;
+                case RECURSION_TYPES.INFINITE_TRAP:
+                    title = "Warning: Unstable Rift";
+                    text = "This recursion anomaly appears to have no reachable base case. Entering it will likely cause a stack overflow. We're authorizing two investigation attempts before pulling you out.";
+                    break;
+                case RECURSION_TYPES.DIVIDE_CONQUER:
+                     title = "Sector 3: Divide & Conquer Firewall";
+                     text = "A massive data firewall is blocking our path. It's too large to solve at once. You must break the problem down by rebalancing the left and right subsystems independently.";
+                     break;
+            }
+            ui.sectorTitle.textContent = title;
+            ui.sectorText.textContent = text;
+            ui.sectorIntroModal.style.display = 'flex';
+        }
+
+        function loadLevel(levelIndex) {
+            gameState = 'playing';
+            totalCallsMade = 0;
+            if (levelIndex !== 6) { // Reset retry counter when not on level 7
+                level7Retries = 0;
+            }
+            const levelData = levels[levelIndex];
+            const lastLevelData = levelIndex > 0 ? levels[levelIndex - 1] : null;
+
+            if (lastLevelData && levelData.type !== lastLevelData.type) {
+                showSectorIntro(levelData.type);
+            }
+
+            recursionStack = [{ x: 0, y: 0, scale: 1, player: new Player(levelData.playerStart.x, levelData.playerStart.y), platforms: JSON.parse(JSON.stringify(levelData.platforms)), playerStart: levelData.playerStart, recursionDepth: 0 }];
+            updateUI();
+        }
+
+        function updateUI(isPush = false, isPop = false) {
+            ui.level.textContent = `Level: ${currentLevelIndex + 1}`;
+            ui.depth.textContent = `Depth: ${recursionStack.length - 1}`;
+            ui.sector.textContent = `Sector: ${levels[currentLevelIndex].type}`;
+            const depth = recursionStack.length -1;
+            const fillHeight = (depth / MAX_DEPTH) * 100;
+            ui.overflowFill.style.height = `${fillHeight}%`;
+            
+            if (depth >= MAX_DEPTH - 1) {
+                if(!ui.overflowFill.classList.contains('warning')) {
+                    playSound('warn');
+                }
+                ui.overflowFill.classList.add('warning');
+                ui.memoryWarning.style.display = 'block';
+            } else {
+                ui.overflowFill.classList.remove('warning');
+                ui.memoryWarning.style.display = 'none';
+            }
+
+            if (isPop) {
+                const itemToPop = ui.callStack.firstChild;
+                if(itemToPop) {
+                    itemToPop.classList.add('stack-item-exit');
+                    setTimeout(() => {
+                        // Re-check the condition before popping to prevent race conditions with level reloads.
+                        if (recursionStack && recursionStack.length > 1) {
+                            recursionStack.pop();
+                            redrawStack();
+                        }
+                    }, 300);
+                }
+            } else {
+                redrawStack(isPush);
+            }
+        }
+        
+        function redrawStack(isPush = false) {
+            ui.callStack.innerHTML = '';
+            recursionStack.forEach((level, index) => {
+                const item = document.createElement('div');
+                item.className = 'stack-item';
+                if (isPush && index === recursionStack.length - 1) {
+                    item.classList.add('stack-item-enter');
+                }
+                if (index === recursionStack.length - 1) item.classList.add('active');
+                item.textContent = `solve(level_${index})`;
+                item.style.transform = `scale(${1 - index*0.05})`;
+                ui.callStack.appendChild(item);
+            });
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            recursionStack.forEach(level => {
+                const { scale, x: offsetX, y: offsetY } = level;
+                if (scale < 1) { ctx.strokeStyle = '#00ffff44'; ctx.lineWidth = 2; ctx.strokeRect(offsetX, offsetY, canvas.width * scale, canvas.height * scale); }
+                level.platforms.forEach(p => { 
+                    let color = COLORS[p.type];
+                    if (p.isTrap) {
+                        const flicker = Math.abs(Math.sin(gameTime * 0.1));
+                        const red = Math.floor(255 * flicker);
+                        color = `rgb(${red}, 0, 255)`;
+                    }
+                    ctx.fillStyle = color; 
+                    ctx.shadowColor = color; 
+                    ctx.shadowBlur = 10; 
+                    ctx.fillRect(p.x * scale + offsetX, p.y * scale + offsetY, p.width * scale, p.height * scale); 
+                });
+                ctx.shadowBlur = 0; level.player.draw(level);
+            });
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => p.draw(recursionStack[recursionStack.length - 1]));
+        }
+
+        function gameLoop() {
+            gameTime++;
+            if (gameState === 'playing') {
+                const activeLevel = recursionStack[recursionStack.length - 1];
+                if (activeLevel) { // Guard against undefined activeLevel
+                    activeLevel.player.update(activeLevel.platforms);
+                    particles.forEach(p => p.update());
+                }
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function resizeCanvas() {
+            const { width, height } = gameContainer.getBoundingClientRect();
+            canvas.width = 800; canvas.height = 600;
+            const scale = Math.min(width / canvas.width, height / canvas.height);
+            canvas.style.width = `${canvas.width * scale}px`;
+            canvas.style.height = `${canvas.height * scale}px`;
+        }
+        
+        function showIntro() {
+            ui.introModal.style.display = 'flex';
+            gameState = 'paused';
+            initAudio();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('keydown', e => { if (gameState !== 'playing') return; if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true; if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true; if (e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'Space') keys.up = true; });
+        window.addEventListener('keyup', e => { if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false; if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false; if (e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'Space') keys.up = false; });
+        ui.restartBtn.addEventListener('click', () => loadLevel(currentLevelIndex));
+        
+        resizeCanvas();
+        loadLevel(currentLevelIndex);
+        showIntro();
+        gameLoop();
+    </script>
+</body>
+</html>
+

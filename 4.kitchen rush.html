@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Sorting Chef</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f7f3e9; /* Creamy background */
+            background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23d4c5a2" fill-opacity="0.2"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+        }
+        h1, h2, h3 { font-family: 'Playfair Display', serif; }
+        .kitchen-floor {
+            background-color: #e2d6bf;
+            background-image:
+                linear-gradient(45deg, #d1c0a4 25%, transparent 25%),
+                linear-gradient(-45deg, #d1c0a4 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #d1c0a4 75%),
+                linear-gradient(-45deg, transparent 75%, #d1c0a4 75%);
+            background-size: 60px 60px;
+        }
+        .counter-top {
+            background: #a98d70;
+            border-bottom: 8px solid #866f5a;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative; /* For the guide text */
+        }
+        .ingredient {
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), background-color 0.3s ease, box-shadow 0.3s ease, left 0.4s ease-in-out, top 0.4s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-bottom: 6px solid rgba(0,0,0,0.15);
+            text-shadow: 0 2px 3px rgba(0,0,0,0.2);
+            position: absolute; /* Needed for smooth swapping */
+            display: flex;
+            flex-direction: column;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        .ingredient-icon {
+            font-size: 2.5rem;
+            line-height: 1;
+        }
+        .ingredient.highlight {
+            transform: translateY(-20px) scale(1.15);
+            background-color: #fef08a; /* yellow-200 */
+            box-shadow: 0 10px 20px rgba(254, 240, 138, 0.6);
+            border-color: #facc15; /* yellow-400 */
+            z-index: 10;
+        }
+        .ingredient.pivot {
+            transform: translateY(-20px) scale(1.15);
+            background-color: #f87171; /* red-400 */
+            box-shadow: 0 10px 20px rgba(248, 113, 113, 0.6);
+            border-color: #ef4444; /* red-500 */
+            z-index: 20;
+        }
+        .ingredient.sorted {
+            background-color: #4ade80; /* green-400 */
+            border-color: #22c55e; /* green-500 */
+            cursor: default;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+            border-bottom: 4px solid rgba(0,0,0,0.3);
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn:active:not(:disabled) { transform: translateY(1px); border-bottom-width: 2px; }
+        .btn:disabled { transform: none; filter: grayscale(0.8); cursor: not-allowed; background-color: #9ca3af; border-color: #4b5563; }
+        #timer-bar-fill { transition: width 1s linear, background-color 0.5s ease; }
+        .modal { display: none; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
+        .modal-content { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        #prep-line, .sub-bowl { position: relative; } /* Parent for absolute positioned ingredients */
+
+        .partition-zone {
+            border: 4px dashed rgba(0,0,0,0.2);
+            border-radius: 1rem;
+            transition: background-color 0.3s ease;
+        }
+        .partition-zone.active {
+            background-color: rgba(254, 240, 138, 0.3);
+            border-color: #facc15;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="w-full max-w-5xl">
+        <header class="text-center mb-4">
+            <h1 class="text-5xl font-bold text-amber-800" style="text-shadow: 2px 2px 0px #f7f3e9, 4px 4px 0px #cebba3;">The Sorting Chef</h1>
+        </header>
+
+        <main class="bg-stone-300 p-4 sm:p-6 rounded-2xl shadow-2xl border-4 border-stone-400">
+            <!-- HUD -->
+            <div class="grid grid-cols-3 gap-4 mb-4 bg-white/50 p-2 rounded-lg text-gray-700 text-center">
+                <div id="level-display" class="font-bold text-lg">Service: 1</div>
+                <div id="chef-title-display" class="font-bold text-lg">Line Cook</div>
+                <div id="score-display" class="font-bold text-lg">Score: 0</div>
+            </div>
+            <!-- Timer -->
+            <div id="timer-bar" class="w-full bg-gray-200 rounded-full h-4 border-2 border-gray-400 shadow-inner">
+                <div id="timer-bar-fill" class="h-full rounded-full bg-green-500" style="width: 100%;"></div>
+            </div>
+
+            <!-- Counter & Prep Line -->
+            <div class="counter-top h-auto min-h-[16rem] rounded-xl p-4 flex flex-col items-center justify-center mt-4">
+                <div class="absolute left-4 top-2 text-amber-900/50 font-bold text-sm">LOWEST WEIGHT</div>
+                <div id="prep-line" class="flex justify-center items-end gap-2 h-48 w-full"></div>
+                <div id="sub-bowls-container" class="w-full mt-4"></div>
+                <div class="absolute right-4 top-2 text-amber-900/50 font-bold text-sm">HIGHEST WEIGHT</div>
+            </div>
+
+            <!-- Player Controls -->
+            <div class="kitchen-floor rounded-xl p-4 mt-[-10px] shadow-inner">
+                <div id="interactive-controls" class="flex items-center justify-center gap-4 mt-8">
+                     <div id="feedback-text" class="text-2xl font-bold text-amber-900 h-10 text-center">Prepare the order!</div>
+                </div>
+                 <div id="action-buttons" class="flex justify-center gap-8 mt-4">
+                    <button id="action-btn-1" class="btn bg-red-500 text-white font-bold py-4 px-8 rounded-lg text-2xl">SWAP</button>
+                    <button id="action-btn-2" class="btn bg-sky-500 text-white font-bold py-4 px-8 rounded-lg text-2xl">KEEP</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modals -->
+    <div id="recipe-modal" class="modal fixed inset-0 flex justify-center items-center z-50">
+        <div class="modal-content bg-amber-50 p-8 rounded-lg shadow-2xl max-w-md w-full text-center border-4 border-amber-800">
+            <h2 id="recipe-title" class="text-4xl font-bold mb-4 text-amber-900">New Order!</h2>
+            <p id="recipe-level" class="text-xl mb-4 text-amber-800"></p>
+            <div class="text-left bg-white p-4 rounded shadow-inner">
+                <h3 class="text-2xl font-bold mb-2 text-amber-900">Recipe: <span id="recipe-name"></span></h3>
+                <div id="recipe-desc"></div>
+            </div>
+            <button id="start-level-btn" class="btn mt-6 bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-xl">Start Cooking!</button>
+        </div>
+    </div>
+
+    <div id="review-modal" class="modal fixed inset-0 flex justify-center items-center z-50">
+        <div class="modal-content bg-amber-50 p-8 rounded-lg shadow-2xl max-w-3xl w-full border-4 border-amber-800">
+            <h2 id="review-title" class="text-4xl font-bold mb-4 text-amber-900 text-center">Order Up!</h2>
+            <div class="flex items-center gap-6">
+                <div id="customer-reaction" class="text-8xl"></div>
+                <div class="grid grid-cols-2 gap-6 w-full">
+                    <div class="bg-white p-4 rounded shadow-inner">
+                         <h3 class="text-2xl font-bold mb-2 text-amber-900">Performance Review</h3>
+                         <div id="review-stats" class="space-y-2 text-amber-800"></div>
+                         <div id="achievements-unlocked" class="mt-2 text-yellow-500 font-bold"></div>
+                    </div>
+                    <div class="bg-white p-4 rounded shadow-inner">
+                        <h3 class="text-2xl font-bold mb-2 text-amber-900">Chef's Insight</h3>
+                        <p id="review-insight" class="text-amber-800"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                 <button id="next-level-btn" class="btn mt-6 bg-sky-500 text-white font-bold py-3 px-8 rounded-lg text-xl">Next Service</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // UI Elements
+        const ui = {
+            prepLine: document.getElementById('prep-line'),
+            subBowlsContainer: document.getElementById('sub-bowls-container'),
+            feedbackText: document.getElementById('feedback-text'),
+            actionButtons: document.getElementById('action-buttons'),
+            swapBtn: document.getElementById('action-btn-1'),
+            keepBtn: document.getElementById('action-btn-2'),
+            levelDisplay: document.getElementById('level-display'),
+            scoreDisplay: document.getElementById('score-display'),
+            chefTitleDisplay: document.getElementById('chef-title-display'),
+            timerBarFill: document.getElementById('timer-bar-fill'),
+            recipeModal: document.getElementById('recipe-modal'),
+            reviewModal: document.getElementById('review-modal'),
+            startLevelBtn: document.getElementById('start-level-btn'),
+            nextLevelBtn: document.getElementById('next-level-btn'),
+            customerReaction: document.getElementById('customer-reaction'),
+            achievementsUnlocked: document.getElementById('achievements-unlocked')
+        };
+        
+        // Game State & Data...
+        let ingredientElements = [];
+        let currentLevel = 0;
+        let totalScore = 0;
+        let mistakes = 0;
+        let gameState = 'paused';
+        let timer, timerInterval;
+        let audioCtx;
+        let unlockedAchievements = new Set();
+        let currentCustomer;
+        
+        const INGREDIENTS_LIST = ['🍅', '🧀', '🥬', '🍞', '🥩', '🧅', '🍄', '🌶️', '🥦', '🥕', '🥔', '🌽'];
+        const CUSTOMER_AVATARS = ['👩‍🍳', '👨‍🌾', '👩‍🔬', '👨‍🎨', '🕵️‍♀️', '🧑‍🚀'];
+
+        const levels = [
+            { ingredients: 5, time: 45, algorithm: 'bubbleSort' },
+            { ingredients: 6, time: 60, algorithm: 'bubbleSort' },
+            { ingredients: 7, time: 90, algorithm: 'selectionSort' },
+            { ingredients: 8, time: 90, algorithm: 'selectionSort' },
+            { ingredients: 7, time: 70, algorithm: 'insertionSort' },
+            { ingredients: 8, time: 90, algorithm: 'insertionSort' },
+            { ingredients: 8, time: 120, algorithm: 'mergeSort' },
+            { ingredients: 9, time: 150, algorithm: 'mergeSort' },
+            { ingredients: 8, time: 120, algorithm: 'quickSort' },
+            { ingredients: 9, time: 150, algorithm: 'quickSort' }
+        ];
+        
+        const CHEF_TITLES = ["Line Cook", "Line Cook", "Prep Chef", "Prep Chef", "Sous Chef", "Sous Chef", "Head Chef", "Head Chef", "Executive Chef", "Master Chef"];
+
+        const algorithms = {
+            bubbleSort: {
+                name: "Bubble Sort",
+                description: "Compare adjacent ingredients and swap them if they're in the wrong order. Repeat until the list is sorted.",
+                insight: "Bubble Sort is like meticulously checking every pair of spices on the rack—thorough, but very slow for a big order! O(n²)"
+            },
+            selectionSort: {
+                name: "Selection Sort",
+                description: "Find the smallest unsorted ingredient and place it at the end of the sorted section. Repeat until all are sorted.",
+                insight: "Selection Sort is like finding the lightest ingredient first, then the next lightest, and so on. It makes fewer swaps than Bubble Sort! O(n²)"
+            },
+            insertionSort: {
+                name: "Insertion Sort",
+                description: "Take ingredients one by one and insert them into their correct position in the sorted part of the line.",
+                insight: "Insertion Sort is like organizing a hand of cards. You pick one up and slide it into the right spot. It's very efficient for nearly-sorted orders! O(n²)"
+            },
+            mergeSort: {
+                name: "Merge Sort",
+                description: "Split the order into smaller bowls, sort each one, then combine (merge) them back together in the correct order.",
+                insight: "Merge Sort is a 'Divide and Conquer' recipe. It's like asking two junior chefs to sort half the ingredients each, then you combine their work. Very efficient! O(n log n)"
+            },
+            quickSort: {
+                name: "Quicksort",
+                description: "Choose a 'star' ingredient (the pivot). Then, quickly separate all other ingredients into two groups: those lighter and those heavier than the star.",
+                insight: "Quicksort is another 'Divide and Conquer' method. A good choice of star ingredient makes the work incredibly fast, but a poor choice can slow things down. O(n log n) on average."
+            }
+        };
+
+        // --- AUDIO ---
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playSound(type) {
+             if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+             switch(type){
+                case 'compare': osc.type = 'sine'; osc.frequency.setValueAtTime(440, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
+                case 'chop': // swap sound
+                    const noise = audioCtx.createBufferSource();
+                    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                    noise.buffer = buffer;
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+                    noise.connect(gain); gain.connect(audioCtx.destination); noise.start();
+                    return;
+                case 'correct': osc.type = 'triangle'; osc.frequency.setValueAtTime(660, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); break;
+                case 'wrong': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+                case 'sorted_ding': // Ding sound for a sorted item
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4); 
+                    break;
+                case 'win': osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); setTimeout(()=>osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.1), 100); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        // --- GAME FLOW ---
+        function showRecipeCard() {
+            gameState = 'paused';
+            const levelData = levels[currentLevel];
+            const algo = algorithms[levelData.algorithm];
+            document.getElementById('recipe-title').textContent = `Dinner Service ${currentLevel + 1}`;
+            document.getElementById('recipe-level').textContent = `Prepare an order of ${levelData.ingredients} ingredients.`;
+            document.getElementById('recipe-name').textContent = algo.name;
+            document.getElementById('recipe-desc').innerHTML = `<p class="text-amber-800">${algo.description}</p><br><p class="text-center font-bold text-rose-600">GOAL: Arrange ingredients by weight, from lowest to highest.</p>`;
+            ui.recipeModal.style.display = 'flex';
+        }
+
+        ui.startLevelBtn.addEventListener('click', () => {
+            ui.recipeModal.style.display = 'none';
+            initAudio();
+            generateOrder();
+            runSort();
+        });
+        
+        ui.nextLevelBtn.addEventListener('click', () => {
+            ui.reviewModal.style.display = 'none';
+            currentLevel++;
+            if (currentLevel >= levels.length) {
+                currentLevel = 0;
+                totalScore = 0;
+            }
+            showRecipeCard();
+        });
+
+        function generateOrder() {
+            const levelData = levels[currentLevel];
+            let ingredientsData = [];
+            ui.prepLine.innerHTML = '';
+            ui.subBowlsContainer.innerHTML = '';
+            mistakes = 0;
+            currentCustomer = CUSTOMER_AVATARS[Math.floor(Math.random() * CUSTOMER_AVATARS.length)];
+            
+            ui.levelDisplay.textContent = `Service: ${currentLevel + 1}`;
+            ui.scoreDisplay.textContent = `Score: ${totalScore}`;
+            ui.chefTitleDisplay.textContent = CHEF_TITLES[currentLevel] || "Master Chef";
+
+            let availableIngredients = [...INGREDIENTS_LIST];
+            for (let i = 0; i < levelData.ingredients; i++) {
+                const value = Math.floor(Math.random() * 20) + 1;
+                const iconIndex = Math.floor(Math.random() * availableIngredients.length);
+                const icon = availableIngredients.splice(iconIndex, 1)[0];
+                if(availableIngredients.length === 0) availableIngredients = [...INGREDIENTS_LIST];
+                ingredientsData.push({ value, icon, id: i });
+            }
+            
+            ingredientElements = createIngredientElements(ingredientsData, ui.prepLine);
+            reorderAndAnimate(ingredientElements, ui.prepLine);
+        }
+        
+        function createIngredientElements(data, parent) {
+            parent.innerHTML = '';
+            return data.map(item => {
+                const height = 60 + item.value * 5;
+                const ingredientEl = document.createElement('div');
+                ingredientEl.className = 'ingredient bg-stone-100 items-center justify-center rounded-lg w-16 sm:w-20';
+                ingredientEl.style.height = `${height}px`;
+                ingredientEl.style.top = '0px';
+                ingredientEl.innerHTML = `<span class="ingredient-icon">${item.icon}</span><span class="ingredient-value font-bold text-xl text-amber-900 mt-1">${item.value}</span>`;
+                ingredientEl.dataset.value = item.value;
+                parent.appendChild(ingredientEl);
+                return ingredientEl;
+            });
+        }
+
+        function reorderAndAnimate(elements, parent, top = 0) {
+            const containerWidth = parent.offsetWidth;
+            const itemWidth = 80; // w-20
+            const totalItemsWidth = elements.length * itemWidth + (elements.length - 1) * 8;
+            const startOffset = (containerWidth - totalItemsWidth) / 2;
+
+            elements.forEach((el, index) => {
+                 el.style.left = `${startOffset + index * (itemWidth + 8)}px`;
+                 el.style.top = `${top}px`;
+            });
+        }
+        
+        function updateTimer() {
+             if (gameState !== 'paused') timer--;
+             const timePercent = Math.max(0, (timer / levels[currentLevel].time) * 100);
+             ui.timerBarFill.style.width = `${timePercent}%`;
+             if (timePercent < 25) ui.timerBarFill.style.backgroundColor = '#ef4444'; // red-500
+             else if (timePercent < 50) ui.timerBarFill.style.backgroundColor = '#f59e0b'; // amber-500
+             else ui.timerBarFill.style.backgroundColor = '#22c55e'; // green-500
+
+             if (timer < 0) {
+                 gameOver("Time's up! The customer left.");
+             }
+        }
+        
+        function gameOver(message) {
+            clearInterval(timerInterval);
+            gameState = 'paused';
+            ui.feedbackText.textContent = message;
+            ui.swapBtn.disabled = true;
+            ui.keepBtn.disabled = true;
+            setTimeout(() => {
+                currentLevel = 0; totalScore = 0;
+                showRecipeCard();
+            }, 2000);
+        }
+
+        async function runSort() {
+            const levelData = levels[currentLevel];
+            timer = levelData.time;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+            gameState = 'sorting';
+            const algoKey = levelData.algorithm;
+            
+            if (algoKey === 'bubbleSort') await interactiveBubbleSort();
+            if (algoKey === 'selectionSort') await interactiveSelectionSort();
+            if (algoKey === 'insertionSort') await interactiveInsertionSort();
+            if (algoKey === 'mergeSort') await interactiveMergeSort(ingredientElements);
+            if (algoKey === 'quickSort') await interactiveQuickSort(ingredientElements, 0, ingredientElements.length - 1);
+
+            if (gameState !== 'paused') {
+                levelComplete();
+            }
+        }
+
+        function levelComplete() {
+            clearInterval(timerInterval);
+            playSound('win');
+            gameState = 'paused';
+            
+            const timeBonus = Math.max(0, timer * 100);
+            const mistakePenalty = mistakes * 500;
+            const levelScore = Math.max(0, 5000 + timeBonus - mistakePenalty);
+            totalScore += levelScore;
+            
+            ui.scoreDisplay.textContent = `Score: ${totalScore}`;
+            ingredientElements.forEach(el => el.classList.add('sorted'));
+
+            document.getElementById('review-title').textContent = `Service ${currentLevel + 1} Complete!`;
+            document.getElementById('review-stats').innerHTML = `
+                <div>Level Score: <span class="font-bold text-amber-900">${levelScore}</span></div>
+                <div>Mistakes: <span class="font-bold text-red-600">${mistakes}</span></div>
+                <div>Total Score: <span class="font-bold text-amber-900">${totalScore}</span></div>`;
+            const algo = algorithms[levels[currentLevel].algorithm];
+            document.getElementById('review-insight').textContent = algo.insight;
+            
+            const timePercent = timer > 0 ? (timer / levels[currentLevel].time) : 0;
+            let reactionFace = '😠';
+            if (timePercent > 0.7 && mistakes === 0) reactionFace = '😍';
+            else if (timePercent > 0.4 && mistakes <= 1) reactionFace = '🙂';
+            ui.customerReaction.textContent = currentCustomer + reactionFace;
+
+            let achievementText = '';
+            if (mistakes === 0 && !unlockedAchievements.has(`perfect_${currentLevel}`)) {
+                achievementText = 'Achievement Unlocked: Perfect Service!';
+                unlockedAchievements.add(`perfect_${currentLevel}`);
+            }
+            ui.achievementsUnlocked.textContent = achievementText;
+
+            ui.reviewModal.style.display = 'flex';
+        }
+        
+        async function waitForPlayerAction(shouldSwap) {
+            return new Promise(resolve => {
+                ui.swapBtn.disabled = false;
+                ui.keepBtn.disabled = false;
+
+                const onSwap = () => {
+                    if (!shouldSwap) { mistakes++; playSound('wrong'); } else { playSound('correct'); }
+                    cleanup();
+                    resolve(true);
+                };
+                const onKeep = () => {
+                    if (shouldSwap) { mistakes++; playSound('wrong'); } else { playSound('correct'); }
+                    cleanup();
+                    resolve(false);
+                };
+                
+                ui.swapBtn.onclick = onSwap;
+                ui.keepBtn.onclick = onKeep;
+                
+                function cleanup() {
+                    ui.swapBtn.disabled = true;
+                    ui.keepBtn.disabled = true;
+                    ui.swapBtn.onclick = null;
+                    ui.keepBtn.onclick = null;
+                }
+            });
+        }
+        
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // --- ALL 5 INTERACTIVE SORTING ALGORITHMS ---
+
+        async function interactiveBubbleSort() {
+            ui.actionButtons.style.display = 'flex';
+            let n = ingredientElements.length;
+            let swapped;
+            do {
+                swapped = false;
+                for (let i = 0; i < n - 1; i++) {
+                    if (gameState === 'paused') return;
+                    const el1 = ingredientElements[i], el2 = ingredientElements[i+1];
+                    el1.classList.add('highlight'); el2.classList.add('highlight');
+                    ui.feedbackText.textContent = `Compare ingredients...`;
+                    await sleep(400);
+
+                    const val1 = parseInt(el1.dataset.value), val2 = parseInt(el2.dataset.value);
+                    const shouldSwap = val1 > val2;
+                    const playerActionIsSwap = await waitForPlayerAction(shouldSwap);
+
+                    if (playerActionIsSwap) {
+                        [ingredientElements[i], ingredientElements[i+1]] = [ingredientElements[i+1], ingredientElements[i]];
+                        reorderAndAnimate(ingredientElements, ui.prepLine);
+                        swapped = true;
+                        playSound('chop');
+                    }
+                    
+                    el1.classList.remove('highlight'); el2.classList.remove('highlight');
+                    await sleep(400);
+                }
+                playSound('sorted_ding');
+                ingredientElements[n-1].classList.add('sorted');
+                n--;
+            } while (swapped);
+            ingredientElements.forEach(el => { if(!el.classList.contains('sorted')) el.classList.add('sorted'); });
+        }
+        
+        async function interactiveSelectionSort() {
+            ui.actionButtons.style.display = 'none';
+            let n = ingredientElements.length;
+            for (let i = 0; i < n - 1; i++) {
+                if (gameState === 'paused') return;
+                ui.feedbackText.textContent = `Find the lightest in the unsorted line.`;
+                let minIdx = i;
+                
+                let clickPromise = new Promise(resolve => {
+                    for(let k = i; k < n; k++) {
+                        ingredientElements[k].classList.add('highlight');
+                        ingredientElements[k].onclick = (e) => {
+                           const clickedIndex = ingredientElements.indexOf(e.currentTarget);
+                           resolve(clickedIndex);
+                        };
+                    }
+                });
+
+                const playerMinChoice = await clickPromise;
+                ingredientElements.forEach(el => {el.onclick = null; el.classList.remove('highlight');});
+
+                for(let j = i + 1; j < n; j++) {
+                    if(parseInt(ingredientElements[j].dataset.value) < parseInt(ingredientElements[minIdx].dataset.value)) minIdx = j;
+                }
+                
+                if(playerMinChoice !== minIdx) {
+                    mistakes++; playSound('wrong');
+                    ui.feedbackText.textContent = `Not quite! The lightest was ${ingredientElements[minIdx].querySelector('.ingredient-icon').textContent}.`;
+                    ingredientElements[playerMinChoice].classList.add('highlight');
+                    ingredientElements[minIdx].classList.add('highlight');
+                    await sleep(1500);
+                } else {
+                    playSound('correct');
+                    ui.feedbackText.textContent = `Correct! Swapping lightest into place...`;
+                }
+
+                if (minIdx !== i) {
+                    playSound('chop');
+                    [ingredientElements[i], ingredientElements[minIdx]] = [ingredientElements[minIdx], ingredientElements[i]];
+                    reorderAndAnimate(ingredientElements, ui.prepLine);
+                }
+                
+                await sleep(500);
+                ingredientElements.forEach(el => el.classList.remove('highlight'));
+                playSound('sorted_ding');
+                ingredientElements[i].classList.add('sorted');
+                await sleep(400);
+            }
+            if(n > 0) ingredientElements[n - 1].classList.add('sorted');
+        }
+
+        async function interactiveInsertionSort() {
+            ui.actionButtons.style.display = 'flex';
+            let n = ingredientElements.length;
+            if (n > 0) ingredientElements[0].classList.add('sorted');
+
+            for (let i = 1; i < n; i++) {
+                let j = i;
+                ingredientElements[j].classList.add('highlight');
+                ui.feedbackText.textContent = `Place the ${ingredientElements[j].querySelector('.ingredient-icon').textContent}`;
+                await sleep(500);
+
+                while (j > 0) {
+                    if (gameState === 'paused') return;
+                    let el1 = ingredientElements[j-1]; let el2 = ingredientElements[j];
+                    el1.classList.add('highlight');
+                    ui.feedbackText.textContent = `Is it lighter than the one on the left?`;
+                    await sleep(500);
+                    
+                    const val1 = parseInt(el1.dataset.value), val2 = parseInt(el2.dataset.value);
+                    const shouldSwap = val2 < val1;
+                    const playerActionIsSwap = await waitForPlayerAction(shouldSwap);
+
+                    if(playerActionIsSwap) {
+                        playSound('chop');
+                        [ingredientElements[j], ingredientElements[j-1]] = [ingredientElements[j-1], ingredientElements[j]];
+                        reorderAndAnimate(ingredientElements, ui.prepLine);
+                        el1.classList.remove('highlight'); await sleep(400);
+                        j--;
+                    } else {
+                        el1.classList.remove('highlight'); break;
+                    }
+                }
+                ingredientElements.forEach(el => el.classList.remove('highlight'));
+                for(let k=0; k <= i; k++) { ingredientElements[k].classList.add('sorted'); }
+                playSound('sorted_ding');
+                await sleep(200);
+            }
+        }
+        
+        async function interactiveMergeSort(elements) {
+            if (elements.length <= 1) {
+                return elements;
+            }
+            ui.actionButtons.style.display = 'none';
+            ui.feedbackText.textContent = 'Splitting the order...';
+            
+            const middle = Math.floor(elements.length / 2);
+            const leftData = elements.slice(0, middle).map(el => ({value: el.dataset.value, icon: el.querySelector('.ingredient-icon').textContent}));
+            const rightData = elements.slice(middle).map(el => ({value: el.dataset.value, icon: el.querySelector('.ingredient-icon').textContent}));
+
+            // Create visual bowls
+            ui.subBowlsContainer.innerHTML = `
+                <div class="flex justify-around w-full">
+                    <div id="bowl-left" class="sub-bowl w-1/2 h-48 bg-black/10 rounded-lg p-2 mx-2"></div>
+                    <div id="bowl-right" class="sub-bowl w-1/2 h-48 bg-black/10 rounded-lg p-2 mx-2"></div>
+                </div>`;
+            const leftBowlEl = document.getElementById('bowl-left');
+            const rightBowlEl = document.getElementById('bowl-right');
+            
+            const leftElements = createIngredientElements(leftData, leftBowlEl);
+            const rightElements = createIngredientElements(rightData, rightBowlEl);
+            reorderAndAnimate(leftElements, leftBowlEl);
+            reorderAndAnimate(rightElements, rightBowlEl);
+
+            await sleep(1000);
+
+            const sortedLeft = await interactiveMergeSort(leftElements);
+            const sortedRight = await interactiveMergeSort(rightElements);
+            
+            const merged = await interactiveMerge(sortedLeft, sortedRight);
+            ui.subBowlsContainer.innerHTML = '';
+            ingredientElements = merged;
+            reorderAndAnimate(ingredientElements, ui.prepLine);
+            return merged;
+        }
+
+        async function interactiveMerge(left, right) {
+            let resultArray = [];
+            ui.feedbackText.textContent = 'Combine the bowls in order!';
+            
+            let i = 0, j = 0;
+            while(i < left.length && j < right.length) {
+                left[i].classList.add('highlight');
+                right[j].classList.add('highlight');
+
+                let clickPromise = new Promise(resolve => {
+                    left[i].onclick = () => resolve('left');
+                    right[j].onclick = () => resolve('right');
+                });
+                const choice = await clickPromise;
+                left[i].onclick = null; right[j].onclick = null;
+
+                const leftVal = parseInt(left[i].dataset.value);
+                const rightVal = parseInt(right[j].dataset.value);
+                
+                const correctChoice = (leftVal <= rightVal) ? 'left' : 'right';
+                if(choice === correctChoice) {
+                    playSound('correct');
+                    if (choice === 'left') {
+                        resultArray.push(left[i++]);
+                    } else {
+                        resultArray.push(right[j++]);
+                    }
+                } else {
+                    mistakes++; playSound('wrong');
+                    // Force the correct one
+                    if(correctChoice === 'left') resultArray.push(left[i++]); else resultArray.push(right[j++]);
+                }
+                left.forEach(el => el.classList.remove('highlight'));
+                right.forEach(el => el.classList.remove('highlight'));
+            }
+
+            return resultArray.concat(left.slice(i)).concat(right.slice(j));
+        }
+
+        async function interactiveQuickSort(elements, low, high) {
+            if (low < high) {
+                const p = await interactivePartition(elements, low, high);
+                await interactiveQuickSort(elements, low, p - 1);
+                await interactiveQuickSort(elements, p + 1, high);
+            }
+            if (elements[low]) elements[low].classList.add('sorted');
+        }
+
+        async function interactivePartition(elements, low, high) {
+            ui.actionButtons.style.display = 'none';
+            ui.feedbackText.textContent = "Select a 'Star Ingredient' (Pivot)";
+            
+            let pivotPromise = new Promise(resolve => {
+                for(let k=low; k<=high; k++) {
+                    elements[k].onclick = () => resolve(k);
+                }
+            });
+            const pivotIndex = await pivotPromise;
+            elements.forEach(el => el.onclick = null);
+
+            const pivotElement = elements[pivotIndex];
+            pivotElement.classList.add('pivot');
+            
+            [elements[pivotIndex], elements[high]] = [elements[high], elements[pivotIndex]];
+            reorderAndAnimate(ingredientElements, ui.prepLine);
+            await sleep(500);
+
+            let i = low;
+            ui.feedbackText.textContent = "Partition: Move lighter items to the left.";
+            for (let j = low; j < high; j++) {
+                elements[j].classList.add('highlight');
+                await sleep(500);
+                const pivotValue = parseInt(elements[high].dataset.value);
+                const currentValue = parseInt(elements[j].dataset.value);
+                if (currentValue < pivotValue) {
+                    playSound('chop');
+                    [elements[i], elements[j]] = [elements[j], elements[i]];
+                    reorderAndAnimate(ingredientElements, ui.prepLine);
+                    await sleep(400);
+                    i++;
+                }
+                elements[j].classList.remove('highlight');
+            }
+            
+            [elements[i], elements[high]] = [elements[high], elements[i]];
+            reorderAndAnimate(ingredientElements, ui.prepLine);
+            pivotElement.classList.remove('pivot');
+            playSound('sorted_ding');
+            elements[i].classList.add('sorted');
+            await sleep(500);
+            
+            return i;
+        }
+
+        // Initial Load
+        window.onload = showRecipeCard;
+    </script>
+</body>
+</html>
+

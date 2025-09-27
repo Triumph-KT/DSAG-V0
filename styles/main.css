@@ -1,0 +1,315 @@
+/* DSAG Platform - Main Styles */
+
+/* Custom Font Classes */
+.font-orbitron {
+    font-family: 'Orbitron', monospace;
+}
+
+.font-inter {
+    font-family: 'Inter', sans-serif;
+}
+
+.font-fira {
+    font-family: 'Fira Code', monospace;
+}
+
+/* Custom CSS Variables */
+:root {
+    --primary-purple: #6c5ce7;
+    --primary-blue: #74b9ff;
+    --primary-cyan: #00cec9;
+    --primary-green: #00b894;
+    --primary-orange: #fdcb6e;
+    --primary-red: #e17055;
+    
+    --bg-dark: #0a0a1a;
+    --bg-darker: #1a1a2e;
+    --bg-gray: #2d3748;
+    --bg-light: #4a5568;
+    
+    --text-primary: #e0e0ff;
+    --text-secondary: #a0a0b0;
+    --text-muted: #6a6a7a;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+/* Navigation Styles */
+.nav-link {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary-purple), var(--primary-blue));
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+/* Game Card Animations */
+.game-card {
+    cursor: pointer;
+    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-card:hover {
+    transform: translateY(-8px);
+}
+
+.game-card:active {
+    transform: translateY(-4px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary-purple), var(--primary-blue));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #5a4fcf, #6bb6ff);
+}
+
+/* Loading Animation */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary-purple);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Pulse Animation */
+.pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+    from {
+        box-shadow: 0 0 20px rgba(108, 92, 231, 0.4);
+    }
+    to {
+        box-shadow: 0 0 30px rgba(108, 92, 231, 0.8);
+    }
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(135deg, var(--primary-purple), var(--primary-blue), var(--primary-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Glass Effect */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Button Hover Effects */
+.btn-hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .game-card:hover {
+        transform: none;
+    }
+    
+    .game-card:active {
+        transform: scale(0.98);
+    }
+}
+
+/* Game Frame Styles */
+#game-frame {
+    background: var(--bg-dark);
+}
+
+/* Custom Focus Styles */
+button:focus,
+a:focus {
+    outline: 2px solid var(--primary-purple);
+    outline-offset: 2px;
+}
+
+/* Selection Styles */
+::selection {
+    background: var(--primary-purple);
+    color: white;
+}
+
+::-moz-selection {
+    background: var(--primary-purple);
+    color: white;
+}
+
+/* Utility Classes */
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.7);
+}
+
+.backdrop-blur {
+    backdrop-filter: blur(10px);
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.slide-up {
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Game-specific styles */
+.game-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-purple), var(--primary-blue));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* Status Indicators */
+.status-online {
+    color: var(--primary-green);
+}
+
+.status-offline {
+    color: var(--primary-red);
+}
+
+.status-loading {
+    color: var(--primary-orange);
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-primary: #e0e0ff;
+        --text-secondary: #a0a0b0;
+        --text-muted: #6a6a7a;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .game-card {
+        border: 2px solid var(--text-primary);
+    }
+    
+    .nav-link::after {
+        height: 3px;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    html {
+        scroll-behavior: auto;
+    }
+}

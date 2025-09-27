@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSAG - The New Paradigm for Learning & Hiring</title>
+    <meta name="description" content="Master algorithms through play, not pain. Interactive games that teach computer science concepts with AI-proof assessment.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles/main.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+</head>
+<body class="bg-gray-900 text-white font-inter">
+    <!-- Navigation -->
+    <nav id="main-nav" class="fixed top-0 w-full z-50 bg-gray-900/95 backdrop-blur-sm border-b border-purple-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="#home" class="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors">
+                        <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">D</span>
+                        </div>
+                        <span class="font-orbitron font-bold text-xl">DSAG</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#home" class="nav-link text-gray-300 hover:text-white transition-colors">Home</a>
+                    <div class="relative group">
+                        <button class="nav-link text-gray-300 hover:text-white transition-colors flex items-center">
+                            Games
+                            <svg class="ml-1 w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute top-full left-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-purple-500/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                            <div class="p-4 space-y-3">
+                                <a href="#games/cosmic-rift" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                                        <span class="text-white text-lg">🚀</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold">Cosmic Rift Scanners</div>
+                                        <div class="text-sm text-gray-400">Two-Pointer Technique</div>
+                                        <div class="text-xs text-yellow-400">⭐⭐⭐⭐⭐ Intermediate</div>
+                                    </div>
+                                </a>
+                                <a href="#games/recursionauts" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+                                        <span class="text-white text-lg">🔄</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold">Recursionauts</div>
+                                        <div class="text-sm text-gray-400">Recursion & Call Stack</div>
+                                        <div class="text-xs text-yellow-400">⭐⭐⭐⭐⭐ Advanced</div>
+                                    </div>
+                                </a>
+                                <a href="#games/enigma-protocol" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                                        <span class="text-white text-lg">🎯</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold">The Enigma Protocol</div>
+                                        <div class="text-sm text-gray-400">Binary Search</div>
+                                        <div class="text-xs text-yellow-400">⭐⭐⭐⭐ Intermediate</div>
+                                    </div>
+                                </a>
+                                <a href="#games/sorting-chef" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700 transition-colors">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                                        <span class="text-white text-lg">👨‍🍳</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold">The Sorting Chef</div>
+                                        <div class="text-sm text-gray-400">All 5 Sorting Algorithms</div>
+                                        <div class="text-xs text-yellow-400">⭐⭐⭐⭐⭐ Beginner to Advanced</div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="#learning-path" class="nav-link text-gray-300 hover:text-white transition-colors">Learning Path</a>
+                    <a href="#progress" class="nav-link text-gray-300 hover:text-white transition-colors">Progress</a>
+                    <a href="#leaderboards" class="nav-link text-gray-300 hover:text-white transition-colors">Leaderboards</a>
+                </div>
+                
+                <!-- CTA Button -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <button id="start-learning-btn" class="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">
+                        Start Learning
+                    </button>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="text-gray-300 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-purple-500/20">
+            <div class="px-4 py-4 space-y-4">
+                <a href="#home" class="block text-gray-300 hover:text-white">Home</a>
+                <div class="space-y-2">
+                    <div class="text-gray-300 font-semibold">Games</div>
+                    <a href="#games/cosmic-rift" class="block pl-4 text-gray-400 hover:text-white">Cosmic Rift Scanners</a>
+                    <a href="#games/recursionauts" class="block pl-4 text-gray-400 hover:text-white">Recursionauts</a>
+                    <a href="#games/enigma-protocol" class="block pl-4 text-gray-400 hover:text-white">The Enigma Protocol</a>
+                    <a href="#games/sorting-chef" class="block pl-4 text-gray-400 hover:text-white">The Sorting Chef</a>
+                </div>
+                <a href="#learning-path" class="block text-gray-300 hover:text-white">Learning Path</a>
+                <a href="#progress" class="block text-gray-300 hover:text-white">Progress</a>
+                <a href="#leaderboards" class="block text-gray-300 hover:text-white">Leaderboards</a>
+                <button class="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-2 rounded-lg font-semibold">
+                    Start Learning
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="main-content" class="pt-16">
+        <!-- Home Section -->
+        <section id="home" class="min-h-screen flex items-center justify-center relative overflow-hidden">
+            <!-- Background Effects -->
+            <div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-purple-900/20 to-blue-900/20"></div>
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%236c5ce7" fill-opacity="0.1"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-30"></div>
+            
+            <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <!-- Hero Content -->
+                <div class="space-y-8">
+                    <div class="space-y-4">
+                        <h1 class="font-orbitron text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                            DSAG
+                        </h1>
+                        <p class="text-2xl md:text-3xl font-light text-gray-300">
+                            The New Paradigm for Learning & Hiring
+                        </p>
+                        <p class="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
+                            Master algorithms through <span class="text-purple-400 font-semibold">play</span>, not <span class="text-red-400 font-semibold">pain</span>
+                        </p>
+                    </div>
+                    
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <button id="hero-start-btn" class="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                            Start Learning
+                        </button>
+                        <button id="hero-demo-btn" class="border border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+                            Watch Demo
+                        </button>
+                        <button id="hero-games-btn" class="border border-blue-500 text-blue-400 hover:bg-blue-500 hover:text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+                            See Games
+                        </button>
+                    </div>
+                    
+                    <!-- Feature Pills -->
+                    <div class="flex flex-wrap justify-center gap-4 mt-8">
+                        <div class="bg-gray-800/50 backdrop-blur-sm border border-purple-500/20 rounded-full px-6 py-3 flex items-center space-x-2">
+                            <span class="text-2xl">🎮</span>
+                            <span class="text-gray-300">4 Interactive Games</span>
+                        </div>
+                        <div class="bg-gray-800/50 backdrop-blur-sm border border-blue-500/20 rounded-full px-6 py-3 flex items-center space-x-2">
+                            <span class="text-2xl">📊</span>
+                            <span class="text-gray-300">Real Assessment</span>
+                        </div>
+                        <div class="bg-gray-800/50 backdrop-blur-sm border border-green-500/20 rounded-full px-6 py-3 flex items-center space-x-2">
+                            <span class="text-2xl">🚀</span>
+                            <span class="text-gray-300">AI-Proof</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Games Section -->
+        <section id="games" class="py-20 bg-gray-800/30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="font-orbitron text-4xl md:text-5xl font-bold text-white mb-4">
+                        🎮 Master Algorithms
+                    </h2>
+                    <p class="text-xl text-gray-400 max-w-3xl mx-auto">
+                        Learn computer science through interactive games that make complex concepts intuitive and engaging.
+                    </p>
+                </div>
+                
+                <!-- Games Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Cosmic Rift Scanners -->
+                    <div class="game-card group" data-game="cosmic-rift">
+                        <div class="bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-xl p-6 h-full transition-all duration-300 hover:border-blue-400 hover:shadow-2xl hover:shadow-blue-500/20">
+                            <div class="text-center space-y-4">
+                                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto text-3xl">
+                                    🚀
+                                </div>
+                                <h3 class="font-orbitron text-xl font-bold text-white">Cosmic Rift Scanners</h3>
+                                <p class="text-gray-400 text-sm">Master the Two-Pointer Technique</p>
+                                <div class="flex justify-center">
+                                    <div class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
+                                </div>
+                                <div class="text-xs text-gray-500">Difficulty: Intermediate</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recursionauts -->
+                    <div class="game-card group" data-game="recursionauts">
+                        <div class="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-xl p-6 h-full transition-all duration-300 hover:border-cyan-400 hover:shadow-2xl hover:shadow-cyan-500/20">
+                            <div class="text-center space-y-4">
+                                <div class="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto text-3xl">
+                                    🔄
+                                </div>
+                                <h3 class="font-orbitron text-xl font-bold text-white">Recursionauts</h3>
+                                <p class="text-gray-400 text-sm">Navigate the Depths of Recursion</p>
+                                <div class="flex justify-center">
+                                    <div class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
+                                </div>
+                                <div class="text-xs text-gray-500">Difficulty: Advanced</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- The Enigma Protocol -->
+                    <div class="game-card group" data-game="enigma-protocol">
+                        <div class="bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-xl p-6 h-full transition-all duration-300 hover:border-amber-400 hover:shadow-2xl hover:shadow-amber-500/20">
+                            <div class="text-center space-y-4">
+                                <div class="w-16 h-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto text-3xl">
+                                    🎯
+                                </div>
+                                <h3 class="font-orbitron text-xl font-bold text-white">The Enigma Protocol</h3>
+                                <p class="text-gray-400 text-sm">Decrypt Binary Search Mastery</p>
+                                <div class="flex justify-center">
+                                    <div class="text-yellow-400 text-sm">⭐⭐⭐⭐</div>
+                                </div>
+                                <div class="text-xs text-gray-500">Difficulty: Intermediate</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- The Sorting Chef -->
+                    <div class="game-card group" data-game="sorting-chef">
+                        <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl p-6 h-full transition-all duration-300 hover:border-green-400 hover:shadow-2xl hover:shadow-green-500/20">
+                            <div class="text-center space-y-4">
+                                <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto text-3xl">
+                                    👨‍🍳
+                                </div>
+                                <h3 class="font-orbitron text-xl font-bold text-white">The Sorting Chef</h3>
+                                <p class="text-gray-400 text-sm">Master All 5 Sorting Algorithms</p>
+                                <div class="flex justify-center">
+                                    <div class="text-yellow-400 text-sm">⭐⭐⭐⭐⭐</div>
+                                </div>
+                                <div class="text-xs text-gray-500">Difficulty: Beginner to Advanced</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Game Container (Hidden by default) -->
+        <div id="game-container" class="hidden fixed inset-0 z-50 bg-gray-900">
+            <div class="h-full flex flex-col">
+                <!-- Game Header -->
+                <div class="bg-gray-800 border-b border-purple-500/20 p-4">
+                    <div class="max-w-7xl mx-auto flex justify-between items-center">
+                        <div class="flex items-center space-x-4">
+                            <button id="back-to-platform" class="text-gray-400 hover:text-white transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                </svg>
+                            </button>
+                            <h2 id="current-game-title" class="font-orbitron text-xl font-bold text-white"></h2>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div id="game-progress" class="hidden text-sm text-gray-400">
+                                <span id="current-level">Level 1</span> / <span id="total-levels">10</span>
+                            </div>
+                            <button id="game-settings" class="text-gray-400 hover:text-white transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Game Frame -->
+                <div class="flex-1">
+                    <iframe id="game-frame" class="w-full h-full border-0" src=""></iframe>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/game-manager.js"></script>
+</body>
+</html>

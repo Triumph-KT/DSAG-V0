@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Rift Scanners</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a1a;
+            color: #e0e0ff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            perspective: 1000px;
+        }
+        .game-container {
+            background: rgba(10, 10, 30, 0.85);
+            border: 2px solid #6c5ce7;
+            box-shadow: 0 0 30px #6c5ce7, inset 0 0 20px #2c2c54;
+            border-radius: 20px;
+            width: 95%;
+            max-width: 900px;
+            padding: 2rem;
+            transform-style: preserve-3d;
+            transform: rotateX(5deg);
+            transition: transform 0.5s ease;
+            position: relative;
+        }
+        .game-container:hover {
+            transform: rotateX(0deg);
+        }
+        h1, h2, #progress-bar-text {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 5px #a29bfe, 0 0 10px #a29bfe;
+        }
+        .game-btn {
+            background: linear-gradient(145deg, #6c5ce7, #a29bfe);
+            border: none;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.5);
+            transition: all 0.3s ease;
+        }
+        .game-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.7);
+        }
+        .game-btn:disabled {
+            background: #4a4a6a;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        #lock-scanners-btn {
+            background: linear-gradient(145deg, #ff6b6b, #ee5253);
+            box-shadow: 0 4px 15px rgba(238, 82, 83, 0.5);
+        }
+        #undo-btn {
+             background: linear-gradient(145deg, #ff9f43, #feca57);
+             box-shadow: 0 4px 15px rgba(255, 159, 67, 0.5);
+        }
+        #mute-bgm-btn {
+            background: #2c2c54;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        #mute-bgm-btn.muted {
+            background: #ff6b6b;
+        }
+        .energy-bar-container {
+            background: #1c1c3c;
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid #4a4a6a;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            position: relative;
+        }
+        .energy-point {
+            background-color: #4a4a6a;
+            color: #e0e0ff;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .energy-point.eliminated {
+            background-color: #2c2c54;
+            color: #6a6a8a;
+            transform: scale(0.9);
+        }
+        .scanner-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            margin: auto 0;
+            border-radius: 6px;
+            z-index: 2;
+            transition: left 0.3s ease-out, transform 0.3s ease-out;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-marker-left {
+            background: linear-gradient(145deg, #00d2d3, #54a0ff);
+            box-shadow: 0 0 15px #00d2d3, 0 0 20px #54a0ff;
+        }
+        .scanner-marker-right {
+            background: linear-gradient(145deg, #ff6b6b, #ff9f43);
+            box-shadow: 0 0 15px #ff6b6b, 0 0 20px #ff9f43;
+        }
+        .scanner-icon {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            text-shadow: 0 0 5px #fff;
+        }
+        .timer-bar, .progress-bar {
+            background-color: #2c2c54;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid #6c5ce7;
+        }
+        .timer-bar { height: 20px; }
+        .progress-bar { height: 15px; }
+        .timer-bar-inner, .progress-bar-inner {
+            background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+            height: 100%;
+            transition: width 0.5s ease-out;
+            border-radius: 999px;
+        }
+        .modal {
+            background: rgba(0, 0, 10, 0.9);
+            border: 2px solid #a29bfe;
+            box-shadow: 0 0 40px #6c5ce7;
+        }
+        .feedback {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            height: 40px;
+            transition: all 0.3s ease;
+        }
+        .low { color: #54a0ff; text-shadow: 0 0 10px #54a0ff; }
+        .high { color: #ff6b6b; text-shadow: 0 0 10px #ff6b6b; }
+        .correct { color: #00ffab; text-shadow: 0 0 10px #00ffab; }
+        .pseudocode {
+            font-family: 'Fira Code', monospace;
+            background: #1c1c3c;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+            white-space: pre;
+        }
+        .code-highlight {
+            background-color: rgba(108, 92, 231, 0.5);
+            display: block;
+            border-left: 3px solid #a29bfe;
+        }
+        
+        @keyframes pulse-anim {
+            0% { transform: scale(1); text-shadow: 0 0 5px #a29bfe; }
+            50% { transform: scale(1.15); text-shadow: 0 0 20px #ffffff; }
+            100% { transform: scale(1); text-shadow: 0 0 5px #a29bfe; }
+        }
+        .pulse { animation: pulse-anim 0.4s ease-out; }
+        
+        @keyframes shake-anim {
+            0%, 100% { transform: translate(0, 0) rotateX(5deg); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-2px, -2px) rotateX(5.5deg); }
+            20%, 40%, 60%, 80% { transform: translate(2px, 2px) rotateX(4.5deg); }
+        }
+        .screen-shake {
+            animation: shake-anim 0.5s infinite;
+        }
+
+        @keyframes rift-tear-anim {
+            0% { filter: none; transform: scale(1) rotateX(5deg); }
+            50% { filter: invert(1) saturate(2); transform: scale(1.05) rotateX(5deg); }
+            100% { filter: none; transform: scale(1) rotateX(5deg); }
+        }
+        .rift-tear {
+            animation: rift-tear-anim 0.3s ease-out;
+        }
+
+        @keyframes anomaly-glitch-anim {
+            0%, 100% { clip-path: inset(0 0 0 0); }
+            20% { clip-path: inset(10% 0 75% 0); }
+            40% { clip-path: inset(45% 0 35% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(25% 0 60% 0); }
+        }
+        .anomaly-glitch {
+            animation: anomaly-glitch-anim 0.4s linear;
+        }
+        
+        .energy-point.victory-ripple {
+            animation: victory-ripple-anim 0.8s ease-out forwards;
+        }
+        @keyframes victory-ripple-anim {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 171, 0); }
+            50% { box-shadow: 0 0 20px 10px rgba(0, 255, 171, 0.5); background-color: #00ffab; }
+            100% { box-shadow: 0 0 30px 20px rgba(0, 255, 171, 0); background-color: #4a4a6a; }
+        }
+
+        .energy-bar-container.failed .energy-point {
+            animation: failure-crack-anim 1s forwards cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        @keyframes failure-crack-anim {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% {
+                transform: translate(var(--translateX), var(--translateY)) rotate(var(--rotate));
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-4">
+
+    <div id="game-container" class="game-container">
+        <button id="mute-bgm-btn" class="absolute top-4 right-4 game-btn py-1 px-3 rounded-md text-sm z-10">BGM: ON</button>
+        <!-- Progress Bar -->
+        <div id="progress-container" class="mb-4">
+             <p id="progress-bar-text" class="text-center text-lg mb-2">SECTOR 1: The Breach</p>
+             <div class="progress-bar">
+                <div id="progress-bar-inner" class="progress-bar-inner" style="width: 10%;"></div>
+             </div>
+        </div>
+        <header class="text-center mb-6">
+            <h1 class="text-4xl font-bold tracking-widest text-purple-300">Cosmic Rift Scanners</h1>
+            <p class="text-purple-400 mt-2">Your mastery of logic is the only thing holding reality together.</p>
+        </header>
+
+        <!-- Game Info Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center mb-4 p-4 bg-black bg-opacity-30 rounded-lg">
+            <div><h2 class="text-lg text-purple-400">LEVEL</h2><p id="level" class="text-3xl font-bold font-orbitron">1</p></div>
+            <div><h2 class="text-lg text-yellow-300">TARGET</h2><p id="target-frequency" class="text-3xl font-bold font-orbitron">0</p></div>
+            <div><h2 class="text-lg text-blue-300">COMBINED</h2><p id="current-sum" class="text-3xl font-bold font-orbitron">0</p></div>
+            <div><h2 class="text-lg text-green-300">MOVES LEFT</h2><p id="moves-left" class="text-3xl font-bold font-orbitron">0</p></div>
+        </div>
+        
+        <!-- Timer -->
+        <div class="mb-4">
+             <h2 class="text-lg text-center text-red-400 font-orbitron mb-2">RIFT STABILITY</h2>
+             <div class="timer-bar"><div id="timer-bar-inner" class="timer-bar-inner"></div></div>
+        </div>
+
+        <div id="energy-bar" class="energy-bar-container mb-4">
+            <div id="scanner-left-marker" class="scanner-marker scanner-marker-left"><span class="scanner-icon">◀</span></div>
+            <div id="scanner-right-marker" class="scanner-marker scanner-marker-right"><span class="scanner-icon">▶</span></div>
+        </div>
+        <div id="feedback-container" class="text-center mb-4 h-16">
+            <p id="feedback" class="feedback"></p>
+            <p id="hint" class="text-cyan-300 text-sm h-6"></p>
+        </div>
+        
+        <!-- Tutorial Overlays -->
+        <div id="tutorial-left" class="hidden absolute left-4 bottom-[8rem] bg-cyan-900/80 border border-cyan-500 text-cyan-200 p-3 rounded-lg shadow-xl z-20 pointer-events-none text-center">
+            <p class="font-orbitron">SCAN LEFT (◀)</p>
+            <p class="text-sm">This INCREASES the total sum.</p>
+        </div>
+        <div id="tutorial-right" class="hidden absolute right-4 bottom-[8rem] bg-orange-900/80 border border-orange-500 text-orange-200 p-3 rounded-lg shadow-xl z-20 pointer-events-none text-center">
+            <p class="font-orbitron">SCAN RIGHT (▶)</p>
+            <p class="text-sm">This DECREASES the total sum.</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-between items-center mt-6 gap-2">
+            <button id="move-left" class="game-btn text-white font-bold py-3 px-4 rounded-lg flex-1">SCAN LEFT (◀)</button>
+            <div class="flex flex-col gap-2">
+                 <button id="lock-scanners-btn" class="game-btn text-white font-bold py-2 px-4 rounded-lg invisible">LOCK</button>
+                 <button id="undo-btn" class="game-btn text-white font-bold py-2 px-4 rounded-lg invisible">UNDO</button>
+            </div>
+            <button id="move-right" class="game-btn text-white font-bold py-3 px-4 rounded-lg flex-1">SCAN RIGHT (▶)</button>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="modal text-center p-8 rounded-2xl max-w-5xl w-full">
+            <h2 id="modal-title" class="text-4xl font-bold font-orbitron mb-4"></h2>
+            <p id="modal-text" class="mb-6 text-lg whitespace-pre-wrap"></p>
+            <div id="modal-analysis" class="hidden text-left grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div>
+                    <h3 class="font-orbitron text-cyan-300 mb-2">Rank & Score</h3>
+                    <div id="modal-rank" class="text-4xl font-orbitron text-yellow-300 mb-2"></div>
+                    <p id="modal-score-breakdown" class="text-sm bg-black bg-opacity-20 p-3 rounded"></p>
+                </div>
+                 <div>
+                    <h3 class="font-orbitron text-cyan-300 mb-2">Concepts</h3>
+                    <p id="modal-concepts" class="text-sm bg-black bg-opacity-20 p-3 rounded"></p>
+                </div>
+                <div>
+                    <h3 class="font-orbitron text-cyan-300 mb-2">Efficiency Report</h3>
+                    <p id="modal-efficiency" class="text-sm bg-black bg-opacity-20 p-3 rounded"></p>
+                </div>
+                <div>
+                    <h3 class="font-orbitron text-cyan-300 mb-2">Pseudocode</h3>
+                    <div id="modal-pseudocode" class="pseudocode"></div>
+                </div>
+            </div>
+            <button id="next-level-btn" class="game-btn text-white font-bold py-3 px-8 rounded-lg text-xl">Start (Enter)</button>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dom = {
+                gameContainer: document.getElementById('game-container'),
+                level: document.getElementById('level'),
+                target: document.getElementById('target-frequency'),
+                currentSum: document.getElementById('current-sum'),
+                movesLeft: document.getElementById('moves-left'),
+                timerBar: document.getElementById('timer-bar-inner'),
+                energyBar: document.getElementById('energy-bar'),
+                feedback: document.getElementById('feedback'),
+                hint: document.getElementById('hint'),
+                moveLeftBtn: document.getElementById('move-left'),
+                moveRightBtn: document.getElementById('move-right'),
+                lockBtn: document.getElementById('lock-scanners-btn'),
+                undoBtn: document.getElementById('undo-btn'),
+                muteBtn: document.getElementById('mute-bgm-btn'),
+                modal: document.getElementById('modal'),
+                modalTitle: document.getElementById('modal-title'),
+                modalText: document.getElementById('modal-text'),
+                modalAnalysis: document.getElementById('modal-analysis'),
+                modalRank: document.getElementById('modal-rank'),
+                modalScoreBreakdown: document.getElementById('modal-score-breakdown'),
+                modalEfficiency: document.getElementById('modal-efficiency'),
+                modalConcepts: document.getElementById('modal-concepts'),
+                modalPseudocode: document.getElementById('modal-pseudocode'),
+                nextLevelBtn: document.getElementById('next-level-btn'),
+                progressBar: document.getElementById('progress-bar-inner'),
+                progressText: document.getElementById('progress-bar-text'),
+                tutorialLeft: document.getElementById('tutorial-left'),
+                tutorialRight: document.getElementById('tutorial-right'),
+                scannerLeft: document.getElementById('scanner-left-marker'),
+                scannerRight: document.getElementById('scanner-right-marker'),
+            };
+
+            let audioCtx;
+            let backgroundLoop;
+            
+            function initAudio() {
+                 if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    startBackgroundMusic();
+                }
+            }
+            
+            function playNotes(frequencies, type = 'sine', duration = 0.2, delay = 0) {
+                if (!audioCtx) return;
+                frequencies.forEach((freq, i) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * delay);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + i * delay + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + i * delay);
+                    osc.stop(audioCtx.currentTime + i * delay + duration);
+                });
+            }
+
+            function startBackgroundMusic() {
+                if (!audioCtx || backgroundLoop || state.isBgmMuted) return;
+
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                filter.Q.setValueAtTime(8, audioCtx.currentTime);
+
+                const distortion = audioCtx.createWaveShaper();
+                distortion.curve = makeDistortionCurve(0);
+                distortion.oversample = '4x';
+
+                const lfo = audioCtx.createOscillator(); 
+                lfo.type = 'sine';
+                lfo.frequency.setValueAtTime(0.2, audioCtx.currentTime);
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.setValueAtTime(2, audioCtx.currentTime);
+                lfo.connect(lfoGain);
+                
+                const osc1 = audioCtx.createOscillator();
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(50, audioCtx.currentTime);
+                lfoGain.connect(osc1.frequency);
+                
+                const osc2 = audioCtx.createOscillator();
+                osc2.type = 'square';
+                osc2.frequency.setValueAtTime(51.5, audioCtx.currentTime);
+                lfoGain.connect(osc2.frequency);
+
+                osc1.connect(filter);
+                osc2.connect(filter);
+                filter.connect(distortion);
+                distortion.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc1.start();
+                osc2.start();
+                lfo.start();
+
+                backgroundLoop = { osc1, osc2, lfo, gainNode, filter, distortion };
+            }
+            
+            function makeDistortionCurve(amount) {
+                let k = typeof amount === 'number' ? amount : 50,
+                    n_samples = 44100,
+                    curve = new Float32Array(n_samples),
+                    deg = Math.PI / 180,
+                    i = 0,
+                    x;
+                for ( ; i < n_samples; ++i ) {
+                    x = i * 2 / n_samples - 1;
+                    curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+                }
+                return curve;
+            }
+
+            function stopBackgroundMusic() {
+                if (backgroundLoop) {
+                    backgroundLoop.osc1.stop();
+                    backgroundLoop.osc2.stop();
+                    backgroundLoop.lfo.stop();
+                    backgroundLoop = null;
+                }
+            }
+
+            const sectors = [
+                "Sector 1: The Breach",
+                "Sector 2: The Null Cacophony",
+                "Sector 3: The Echoing Void",
+                "Sector 4: The Axiom",
+                "Sector 5: The Weaver's Loom"
+            ];
+            const lore = [
+                "You've stabilized the initial breach. Our reality holds for now. These rifts are raw chaos, but they respond to logical constraints. Your efficiency is our only weapon. Continue your work.",
+                "The rifts in this sector feel... intentional. We're detecting a hostile intelligence within the noise—a brute-force consciousness we're calling the 'Null Cacophony.' It is deliberately corrupting spacetime. It seems you have an enemy.",
+                "The Null Cacophony's patterns are too complex to be random. It's not just attacking; it's... responding. Analysis of the stabilized rift echoes reveals a chilling truth: these rifts are not wounds, they are messages. The chaos is a language. You are in a dialogue with a ghost.",
+                "The language of the rifts is becoming clear. They describe 'fundamental axioms'—the base logic of the universe. The Two-Pointer technique isn't just a strategy; it is a universal law. The ancient civilization that sent these messages is trying to teach you the physics of reality itself.",
+                "The final message is unlocked. The rifts were a test from our creators, a final exam to see if we could grasp the algorithmic nature of existence before we destroyed ourselves. The Null Cacophony was the embodiment of our own potential for chaos. By mastering logic, you have proven our worth. You are the Spacetime Weaver."
+            ];
+
+            let state = {
+                level: 0, retryCount: 0, winStreak: 0, target: 0, signature: [],
+                leftIdx: 0, rightIdx: 0, maxTime: 60, timeLeft: 60, maxMoves: 20,
+                movesMade: 0, interval: null, isGameOver: true, moveHistory: [],
+                hintTimeout: null, isBgmMuted: false, inefficientMoves: 0,
+                isUnsolvable: false, isUnsorted: false, targetShiftScheduled: false,
+            };
+
+            function generateLevel() {
+                dom.gameContainer.classList.remove('screen-shake', 'rift-tear');
+                dom.energyBar.classList.remove('failed');
+                if (!state.isGameOver) state.retryCount = 0;
+                state.level++;
+                state.isGameOver = false;
+                state.isUnsolvable = false;
+                state.isUnsorted = false;
+                state.targetShiftScheduled = false;
+
+                // Tutorial Overlay Logic
+                if (state.level <= 2) {
+                    dom.tutorialLeft.classList.remove('hidden');
+                    dom.tutorialRight.classList.remove('hidden');
+                } else {
+                    dom.tutorialLeft.classList.add('hidden');
+                    dom.tutorialRight.classList.add('hidden');
+                }
+
+                let timeBonus = state.retryCount >= 2 ? 5 : 0;
+                let difficultySpike = state.winStreak >= 2 ? 1.2 : 1;
+
+                const arraySize = Math.floor((10 + state.level * 2) * difficultySpike);
+                state.maxTime = (45 - state.level * 2 > 15 ? 45 - state.level * 2 : 15) - (difficultySpike > 1 ? 5 : 0) + timeBonus;
+                state.timeLeft = state.maxTime;
+                state.maxMoves = Math.floor(arraySize * 1.5);
+                state.movesMade = 0;
+                state.moveHistory = [];
+                state.inefficientMoves = 0;
+                
+                const unique = new Set();
+                while(unique.size < arraySize) {
+                    let num = Math.floor(Math.random() * (arraySize * 4)) + 1;
+                    if (state.level >= 6 && Math.random() > 0.6) num *= -1;
+                    unique.add(num);
+                }
+                state.signature = Array.from(unique).sort((a, b) => a - b);
+
+                // Normal target generation
+                const minIdx = Math.floor(arraySize * 0.1), maxIdx = Math.floor(arraySize * 0.9) - 1;
+                let i1 = minIdx + Math.floor(Math.random() * (maxIdx - minIdx));
+                let i2 = minIdx + Math.floor(Math.random() * (maxIdx - minIdx));
+                while (i1 === i2) i2 = minIdx + Math.floor(Math.random() * (maxIdx - minIdx));
+                state.target = state.signature[i1] + state.signature[i2];
+                
+                // Variant Rule Sets
+                if (state.level > 10 && Math.random() < 0.15) { // Unsolvable
+                    state.isUnsolvable = true;
+                    state.target = state.signature[0] + state.signature[1] - 1; 
+                }
+                 if (state.level > 15 && Math.random() < 0.15) { // Unsorted
+                    state.isUnsorted = true;
+                    state.signature.sort(() => Math.random() - 0.5);
+                }
+                 if (state.level > 12 && Math.random() < 0.2) { // Target Shift
+                    state.targetShiftScheduled = true;
+                }
+                
+                state.leftIdx = 0;
+                state.rightIdx = state.signature.length - 1;
+
+                dom.lockBtn.classList.add('invisible');
+                dom.undoBtn.classList.add('invisible');
+                dom.modal.classList.add('hidden');
+                dom.modalAnalysis.classList.add('hidden');
+                dom.hint.textContent = '';
+                renderEnergyBar();
+                updateUI();
+                startTimer();
+            }
+
+            function renderEnergyBar() {
+                // Clear everything except the markers
+                [...dom.energyBar.children].forEach(child => {
+                    if (!child.classList.contains('scanner-marker')) {
+                        child.remove();
+                    }
+                });
+
+                state.signature.forEach((val) => {
+                    const p = document.createElement('div');
+                    p.className = 'energy-point p-2 flex-grow text-center';
+                    const v = document.createElement('span');
+                    v.textContent = val;
+                    p.appendChild(v);
+                    dom.energyBar.appendChild(p);
+                });
+            }
+
+            function updateScannerPositions() {
+                const points = [...dom.energyBar.children].filter(c => c.classList.contains('energy-point'));
+                const leftPoint = points[state.leftIdx];
+                const rightPoint = points[state.rightIdx];
+
+                if (leftPoint) {
+                    dom.scannerLeft.style.width = `${leftPoint.offsetWidth}px`;
+                    dom.scannerLeft.style.height = `${leftPoint.offsetHeight}px`;
+                    dom.scannerLeft.style.left = `${leftPoint.offsetLeft}px`;
+                    leftPoint.style.color = 'transparent'; // Hide number under scanner
+                }
+                if (rightPoint) {
+                    dom.scannerRight.style.width = `${rightPoint.offsetWidth}px`;
+                    dom.scannerRight.style.height = `${rightPoint.offsetHeight}px`;
+                    dom.scannerRight.style.left = `${rightPoint.offsetLeft}px`;
+                    rightPoint.style.color = 'transparent'; // Hide number under scanner
+                }
+            }
+
+            function updateEliminatedVisuals() {
+                const points = [...dom.energyBar.children].filter(c => c.classList.contains('energy-point'));
+                points.forEach((point, i) => {
+                     point.style.color = '#e0e0ff'; // Reset all text colors
+                     if (i < state.leftIdx || i > state.rightIdx) {
+                        point.classList.add('eliminated');
+                    } else {
+                        point.classList.remove('eliminated');
+                    }
+                });
+            }
+
+            function updateUI() {
+                if(state.isGameOver) return;
+                
+                const sectorIdx = Math.min(sectors.length - 1, Math.floor((state.level-1) / 5));
+                dom.progressText.textContent = sectors[sectorIdx];
+                dom.progressBar.style.width = `${((state.level -1) % 5 + 1) / 5 * 100}%`;
+                dom.level.textContent = state.level;
+                dom.target.textContent = state.target;
+                dom.movesLeft.textContent = state.maxMoves - state.movesMade;
+
+                updateEliminatedVisuals();
+                updateScannerPositions();
+
+                const currentSum = state.signature[state.leftIdx] + state.signature[state.rightIdx];
+                if (state.level >= 8) dom.currentSum.textContent = '???';
+                else if (parseInt(dom.currentSum.textContent) !== currentSum) {
+                    dom.currentSum.textContent = currentSum;
+                    dom.currentSum.classList.add('pulse');
+                    setTimeout(() => dom.currentSum.classList.remove('pulse'), 400);
+                }
+
+                dom.feedback.className = 'feedback';
+                clearTimeout(state.hintTimeout);
+                if (currentSum < state.target) {
+                    dom.feedback.textContent = 'Frequency Too Low';
+                    dom.feedback.classList.add('low');
+                } else if (currentSum > state.target) {
+                    dom.feedback.textContent = 'Frequency Too High';
+                    dom.feedback.classList.add('high');
+                } else {
+                    dom.feedback.textContent = 'TARGET LOCKED!';
+                    dom.feedback.classList.add('correct');
+                    endGame(true);
+                }
+                dom.timerBar.style.width = `${(state.timeLeft / state.maxTime) * 100}%`;
+                dom.moveLeftBtn.disabled = state.leftIdx + 1 >= state.rightIdx;
+                dom.moveRightBtn.disabled = state.rightIdx - 1 <= state.leftIdx;
+                dom.undoBtn.disabled = state.moveHistory.length === 0;
+            }
+
+            function handleMove(direction) {
+                if (state.isGameOver) return;
+
+                const currentSum = state.signature[state.leftIdx] + state.signature[state.rightIdx];
+                if ((direction === 'left' && currentSum > state.target) || (direction === 'right' && currentSum < state.target)) {
+                    state.inefficientMoves++;
+                }
+                
+                if (direction === 'left') {
+                    playNotes([261.63, 392.00], 'triangle', 0.15, 0.08); // C4, G4
+                } else {
+                    playNotes([392.00, 261.63], 'triangle', 0.15, 0.08); // G4, C4
+                }
+                
+                state.moveHistory.push({ left: state.leftIdx, right: state.rightIdx, moves: state.movesMade });
+                state.movesMade++;
+
+                dom.lockBtn.classList.remove('invisible');
+                dom.undoBtn.classList.remove('invisible');
+                dom.hint.textContent = '';
+
+                if (direction === 'left' && !dom.moveLeftBtn.disabled) state.leftIdx++;
+                else if (direction === 'right' && !dom.moveRightBtn.disabled) state.rightIdx--;
+
+                if (state.movesMade >= state.maxMoves) endGame(false, "Rift Collapse: Too Many Moves!");
+                if (state.leftIdx >= state.rightIdx) endGame(false, "Pointers Crossed");
+                updateUI();
+            }
+
+            function handleTargetShift() {
+                playNotes([440, 220, 440], 'sawtooth', 0.1, 0.1);
+                dom.hint.textContent = 'RIFT DESTABILIZED! NEW TARGET FREQUENCY!';
+                const arraySize = state.signature.length;
+                const minIdx = Math.floor(arraySize * 0.1), maxIdx = Math.floor(arraySize * 0.9) - 1;
+                let i1 = minIdx + Math.floor(Math.random() * (maxIdx - minIdx));
+                let i2 = minIdx + Math.floor(Math.random() * (maxIdx - minIdx));
+                while (i1 === i2) i2 = minIdx + Math.floor(Math.random() * (maxIdx - minIdx));
+                state.target = state.signature[i1] + state.signature[i2];
+                dom.target.classList.add('pulse');
+                setTimeout(() => {
+                    dom.target.classList.remove('pulse');
+                    if (!state.isGameOver) dom.hint.textContent = '';
+                }, 2000);
+                updateUI();
+            }
+
+            function handleAnomaly() {
+                dom.gameContainer.classList.add('anomaly-glitch');
+                playNotes([80, 120, 100], 'square', 0.2);
+                dom.hint.textContent = 'COSMIC ANOMALY DETECTED!';
+
+                if (Math.random() > 0.5) { 
+                    if (state.leftIdx > 0) state.leftIdx--;
+                } else { 
+                    if (state.rightIdx < state.signature.length - 1) state.rightIdx++;
+                }
+
+                setTimeout(() => {
+                    dom.gameContainer.classList.remove('anomaly-glitch');
+                    if (!state.isGameOver) dom.hint.textContent = ''; 
+                    updateUI();
+                }, 400);
+            }
+
+            function handleUndo() {
+                if (state.isGameOver || state.moveHistory.length === 0) return;
+                const lastState = state.moveHistory.pop();
+                state.leftIdx = lastState.left;
+                state.rightIdx = lastState.right;
+                state.movesMade = lastState.moves; 
+                dom.hint.textContent = '';
+                updateUI();
+            }
+
+            function handleLock() {
+                if(state.isGameOver) return;
+                const currentSum = state.signature[state.leftIdx] + state.signature[state.rightIdx];
+                if (currentSum === state.target) {
+                     playNotes([261.63, 329.63, 392.00], 'sine', 0.4); // C Major
+                }
+                endGame(currentSum === state.target, currentSum === state.target ? null : "Incorrect Lock-On!");
+            }
+
+            function startTimer() {
+                if (state.interval) clearInterval(state.interval);
+                state.interval = setInterval(() => {
+                    if (state.isGameOver) return;
+                    state.timeLeft--;
+                    
+                    if (state.timeLeft <= 15 && backgroundLoop) {
+                        const timePressure = 1 - (state.timeLeft / 15);
+                        backgroundLoop.filter.frequency.setTargetAtTime(1000 - (800 * timePressure), audioCtx.currentTime, 0.5);
+                        backgroundLoop.distortion.curve = makeDistortionCurve(80 * timePressure);
+                    }
+
+                    if (state.timeLeft <= 10 && !state.isGameOver) {
+                        dom.gameContainer.classList.add('screen-shake');
+                    }
+                    
+                    if (state.targetShiftScheduled && state.timeLeft < state.maxTime / 2) {
+                        handleTargetShift();
+                        state.targetShiftScheduled = false;
+                    }
+
+                    if (Math.random() < 0.03 && state.timeLeft > 10) { 
+                        handleAnomaly();
+                    }
+
+                    if (state.timeLeft <= 0) {
+                        state.timeLeft = 0;
+                        endGame(false, "Rift Unstable: Time Out!");
+                    }
+                    updateUI();
+                }, 1000);
+            }
+            
+            function endGame(isWin, title) {
+                if(state.isGameOver) return;
+
+                // Special win condition for unsolvable levels
+                if (title === "Pointers Crossed" && state.isUnsolvable) {
+                    state.isGameOver = true;
+                    clearInterval(state.interval);
+                    dom.modalTitle.textContent = "Correct Diagnosis";
+                    dom.modalText.textContent = "Excellent analysis, Commander. You correctly determined that no solution existed in the data set. Recognizing an unsolvable problem is as important as solving one.";
+                    dom.modalAnalysis.classList.add('hidden');
+                    dom.nextLevelBtn.textContent = 'Next Level (Enter)';
+                    dom.modal.classList.remove('hidden');
+                    playNotes([261.63, 311.13, 392.00], 'sine', 0.5); // C Minor, then Major
+                    return;
+                }
+                
+                state.isGameOver = true;
+                clearInterval(state.interval);
+                state.interval = null;
+                dom.hint.textContent = '';
+                dom.gameContainer.classList.remove('screen-shake');
+                if (backgroundLoop) {
+                    backgroundLoop.filter.frequency.setTargetAtTime(1000, audioCtx.currentTime, 0.5);
+                    backgroundLoop.distortion.curve = makeDistortionCurve(0);
+                }
+                
+                if (!isWin) {
+                    dom.energyBar.classList.add('failed');
+                    const points = dom.energyBar.querySelectorAll('.energy-point');
+                    points.forEach(p => {
+                        p.style.setProperty('--translateX', `${(Math.random() - 0.5) * 500}px`);
+                        p.style.setProperty('--translateY', `${(Math.random() - 0.5) * 300}px`);
+                        p.style.setProperty('--rotate', `${(Math.random() - 0.5) * 360}deg`);
+                    });
+                }
+
+
+                if (!isWin && title === "Incorrect Lock-On!") {
+                    dom.gameContainer.classList.add('rift-tear');
+                    playNotes([55, 52], 'square', 0.3);
+                    setTimeout(() => dom.gameContainer.classList.remove('rift-tear'), 300);
+                }
+
+                if(isWin) {
+                    const points = [...dom.energyBar.children].filter(c => c.classList.contains('energy-point'));
+                    points[state.leftIdx].classList.add('victory-ripple');
+                    points[state.rightIdx].classList.add('victory-ripple');
+
+                    if(state.timeLeft / state.maxTime > 0.6) state.winStreak++; else state.winStreak = 0;
+                    state.retryCount = 0;
+                    
+                    const timeScore = state.timeLeft * 100;
+                    const optimalMoves = state.leftIdx + (state.signature.length - 1 - state.rightIdx);
+                    const efficiencyBonus = state.movesMade > 0 ? (optimalMoves / state.movesMade) * 5000 : 5000;
+                    const penalty = state.inefficientMoves * 750;
+                    const totalScore = Math.floor(Math.max(0, timeScore + efficiencyBonus - penalty));
+
+                    let rank = 'Cadet';
+                    if (totalScore > 8000) rank = 'Admiral';
+                    else if (totalScore > 5000) rank = 'Commander';
+                    
+                    const sectorIdx = Math.floor((state.level - 1) / 5);
+                    const isSectorCleared = state.level > 0 && state.level % 5 === 0 && sectors[sectorIdx];
+
+                    setTimeout(() => {
+                        if (isSectorCleared) {
+                            dom.modalTitle.textContent = `${sectors[sectorIdx]} SECURED`;
+                            dom.modalText.innerHTML = `<strong class="text-yellow-300">LORE UNLOCKED:</strong><br><br>${lore[sectorIdx]}`;
+                        } else {
+                            dom.modalTitle.textContent = "Rank Awarded: " + rank;
+                            dom.modalText.textContent = `Excellent work! You cleared Level ${state.level}.`;
+                        }
+                        
+                        dom.modalRank.textContent = rank;
+                        dom.modalScoreBreakdown.innerHTML = `
+                            Time Bonus: ${timeScore}<br>
+                            Efficiency Bonus: ${Math.floor(efficiencyBonus)}<br>
+                            Inefficiency Penalty: -${penalty}<br>
+                            <hr class="my-1 border-purple-400">
+                            <strong>Final Score: ${totalScore}</strong>
+                        `;
+                        
+                        const n = state.signature.length;
+                        const bruteForceChecks = (n * (n-1)) / 2;
+                        dom.modalEfficiency.innerHTML = `
+                            Your Moves: ${state.movesMade}<br>
+                            Optimal Moves: ${optimalMoves}<br>
+                            Inefficient Moves: ${state.inefficientMoves}<br>
+                            Checks Avoided: ${bruteForceChecks - state.movesMade}
+                        `;
+
+                        dom.modalConcepts.innerHTML = `
+                            Two-Pointer Technique<br>
+                            O(n) Time Complexity<br>
+                            O(1) Space Complexity
+                        `;
+                        
+                        const leftHighlight = !state.isUnsorted && (state.signature[state.leftIdx] + state.signature[state.rightIdx-1] < state.target) ? 'code-highlight' : '';
+                        const rightHighlight = !state.isUnsorted && (state.signature[state.leftIdx+1] + state.signature[state.rightIdx] > state.target) ? 'code-highlight' : '';
+                        dom.modalPseudocode.innerHTML = `<span>while (left < right):</span>
+<span>  sum = arr[left] + arr[right]</span>
+<span class="code-highlight">  if (sum == target): return</span>
+<span class="${leftHighlight}">  else if (sum < target): left++</span>
+<span class="${rightHighlight}">  else: right--</span>`;
+
+                        dom.modalAnalysis.classList.remove('hidden');
+                        dom.nextLevelBtn.textContent = 'Next Level (Enter)';
+                        dom.modal.classList.remove('hidden');
+                    }, 800);
+
+                } else {
+                    setTimeout(() => {
+                        state.winStreak = 0;
+                        state.retryCount++;
+                        let loseText = `Mission failed on Level ${state.level}.`;
+                        
+                        if (state.isUnsorted) {
+                            loseText += "\n\nCRITICAL ANOMALY: The energy signature was not sorted. The Two-Pointer technique requires sorted data to function.";
+                        } else if (state.level > 2) {
+                            if (state.retryCount >= 2) loseText += "\n\nMINI-TUTORIAL: The array is sorted. Moving the LEFT scanner (◀) always INCREASES the sum. Moving the RIGHT scanner (▶) always DECREASES it.";
+                            else loseText += "\n\nHint: If the sum is too low, which scanner should you move?";
+                        }
+                        dom.modalTitle.textContent = title;
+                        dom.modalText.textContent = loseText;
+                        dom.modalAnalysis.classList.add('hidden');
+                        dom.nextLevelBtn.textContent = 'Retry Level (Enter)';
+                        state.level--;
+                        dom.modal.classList.remove('hidden');
+                    }, 1000);
+                }
+            }
+            
+            function showInitialMessage() {
+                state.isGameOver = true;
+                clearInterval(state.interval);
+                dom.tutorialLeft.classList.add('hidden');
+                dom.tutorialRight.classList.add('hidden');
+                dom.modalTitle.textContent = 'Mission Briefing';
+                dom.modalText.textContent = "Commander, you are our last hope.\n\nUnstable rifts in spacetime threaten to unravel reality itself. Your mastery of algorithmic logic is the only thing that can stabilize them. Go, and let your efficiency save worlds.";
+                dom.nextLevelBtn.textContent = 'Begin Mission (Enter)';
+                dom.modal.classList.remove('hidden');
+            }
+
+            function toggleBgm() {
+                state.isBgmMuted = !state.isBgmMuted;
+                if (state.isBgmMuted) {
+                    stopBackgroundMusic();
+                    dom.muteBtn.textContent = 'BGM: OFF';
+                    dom.muteBtn.classList.add('muted');
+                } else {
+                    startBackgroundMusic();
+                    dom.muteBtn.textContent = 'BGM: ON';
+                    dom.muteBtn.classList.remove('muted');
+                }
+            }
+
+            document.body.addEventListener('click', initAudio, { once: true });
+            document.body.addEventListener('keydown', initAudio, { once: true });
+            dom.moveLeftBtn.addEventListener('click', () => handleMove('left'));
+            dom.moveRightBtn.addEventListener('click', () => handleMove('right'));
+            dom.lockBtn.addEventListener('click', handleLock);
+            dom.undoBtn.addEventListener('click', handleUndo);
+            dom.muteBtn.addEventListener('click', toggleBgm);
+            dom.nextLevelBtn.addEventListener('click', generateLevel);
+            document.addEventListener('keydown', (e) => {
+                if (!dom.modal.classList.contains('hidden')) {
+                    if (e.key === 'Enter') dom.nextLevelBtn.click();
+                    return;
+                }
+                if (state.isGameOver) return;
+                if (e.key === 'ArrowLeft') dom.moveLeftBtn.click();
+                else if (e.key === 'ArrowRight') dom.moveRightBtn.click();
+                else if (e.key === 'z' && e.ctrlKey) handleUndo();
+            });
+            showInitialMessage();
+        });
+    </script>
+</body>
+</html>
+

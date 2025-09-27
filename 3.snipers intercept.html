@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Enigma Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Courier Prime', monospace;
+            background-color: #1a1816;
+            color: #E2B872; /* Amber */
+            background-image: radial-gradient(rgba(226, 184, 114, 0.05) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+        h1, h2, h3 {
+            font-family: 'Special Elite', cursive;
+            text-shadow: 0 0 3px rgba(226, 184, 114, 0.5);
+        }
+        #game-wrapper {
+            background-color: #2a2621;
+            border: 4px solid #4a4137;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7), inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        .ui-element, .modal-content {
+            background-color: #3C352D;
+            border: 2px solid #5a5147;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+        button {
+            font-family: 'Special Elite', cursive;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        }
+        button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+        .modal {
+            display: none;
+            background-color: rgba(26, 24, 22, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-content { animation: fadeIn 0.3s ease-out; }
+        .frequency-bar {
+            background: #1a1816;
+            height: 40px;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid #5a5147;
+            padding: 2px;
+        }
+        .eliminated-zone {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            background-color: rgba(0, 0, 0, 0.7);
+            transition: all 0.5s ease-in-out;
+        }
+        .scan-line {
+            position: absolute;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: #FF5733; /* A contrasting orange-red */
+            box-shadow: 0 0 10px #FF5733;
+            transition: left 0.3s ease-out;
+            opacity: 0;
+        }
+        .hit-effect { animation: hit 0.5s ease-in-out; }
+        @keyframes hit {
+            50% { box-shadow: 0 0 30px rgba(172, 255, 47, 0.7), inset 0 0 20px rgba(0,0,0,0.5); border-color: #ADFF2F;}
+        }
+        .miss-effect { animation: miss 0.3s ease-in-out; }
+        @keyframes miss {
+            0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); }
+        }
+        .pseudocode {
+            background: #1a1816; padding: 1rem; border-radius: 4px;
+            text-align: left; font-size: 0.9rem; white-space: pre; border: 1px solid #5a5147;
+        }
+        .analysis-path { word-break: break-all; }
+        #signal-strength-fill { transition: width 0.3s ease-out, background-color 0.3s ease-out; background: linear-gradient(90deg, #6B8E23, #DAA520, #CD5C5C); } /* Olive -> Gold -> Red */
+        #timer-bar { transition: width 0.5s linear, background-color 0.5s linear; }
+        #static-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #1a1816;
+            opacity: 0.8; pointer-events: none; z-index: 100;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center h-screen m-0 p-4">
+    <div id="static-overlay"></div>
+
+    <div id="game-wrapper" class="w-full max-w-4xl p-6 rounded-lg">
+        <h1 class="text-4xl text-center font-bold tracking-widest text-amber-300">THE ENIGMA PROTOCOL</h1>
+        
+        <div class="grid grid-cols-3 gap-4 my-4 text-lg text-center">
+            <div id="level-display" class="ui-element py-2">Mission: 1</div>
+            <div id="score-display" class="ui-element py-2">Score: 0</div>
+            <div id="streak-display" class="ui-element py-2">Streak: 0</div>
+        </div>
+        
+        <!-- Timer -->
+        <div class="w-full bg-black/30 rounded-full h-2.5 my-4 border-2 border-[#5a5147]">
+            <div id="timer-bar" class="bg-amber-400 h-full rounded-full" style="width: 100%"></div>
+        </div>
+
+        <!-- Frequency Analyzer -->
+        <div class="my-6">
+             <div class="flex justify-between text-amber-300">
+                <span id="lower-bound">1</span>
+                <span id="upper-bound">100</span>
+            </div>
+            <div class="frequency-bar mt-1">
+                <div id="eliminated-low" class="eliminated-zone" style="left: 0; width: 0%;"></div>
+                <div id="eliminated-high" class="eliminated-zone" style="right: 0; width: 0%;"></div>
+                <div id="scan-line" class="scan-line"></div>
+            </div>
+            <!-- Signal Strength -->
+            <div class="w-full bg-black/20 rounded-full h-2 mt-2 border border-[#5a5147]">
+                <div id="signal-strength-fill" class="h-full rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div id="feedback" class="h-10 text-center text-2xl font-bold text-amber-100 my-4">Awaiting Key...</div>
+
+        <!-- Controls -->
+        <div class="flex items-center justify-center space-x-2">
+             <span id="attempts-display" class="ui-element px-4 py-3">Attempts: 0</span>
+             <input type="number" id="guess-input" placeholder="Enter Key" class="bg-[#1a1816] border-2 w-1/2 border-[#5a5147] text-amber-200 text-center text-xl rounded-md p-3 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition">
+             <button id="fire-button" class="bg-red-800 hover:bg-red-700 text-amber-100 font-bold py-3 px-8 rounded-md text-xl">
+                 DECRYPT
+             </button>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="intro-modal" class="modal fixed inset-0 justify-center items-center z-50">
+         <div class="modal-content p-8 rounded-lg shadow-2xl max-w-xl w-full text-center">
+            <h2 class="text-3xl font-bold mb-4 text-amber-300">CLASSIFIED//TOP SECRET</h2>
+            <p class="mb-2 text-lg">Agent, we have intercepted an encrypted enemy transmission. It repeats on a loop, but the key changes with each broadcast.</p>
+            <p class="mb-6">Your mission is to find the numeric key before the message degrades. Time is critical. Use standard binary search protocol to narrow the possibilities. The fate of the free world may depend on it. Good luck.</p>
+            <button id="start-mission-button" class="mt-4 bg-green-800 hover:bg-green-700 text-amber-100 font-bold py-2 px-6 rounded-md">Begin Protocol</button>
+        </div>
+    </div>
+    <div id="win-modal" class="modal fixed inset-0 justify-center items-center z-50">
+        <div class="modal-content p-8 rounded-lg shadow-2xl max-w-4xl w-full">
+             <h2 class="text-3xl font-bold mb-4 text-green-400 text-center">MESSAGE DECRYPTED</h2>
+             <div class="grid grid-cols-2 gap-6 text-left">
+                 <div>
+                     <h3 class="text-amber-300 mb-2">After-Action Report</h3>
+                     <div id="level-stats" class="text-sm bg-black bg-opacity-20 p-4 rounded-md space-y-2"></div>
+                     <h3 class="text-amber-300 mt-4 mb-2">Strategic Analysis</h3>
+                     <div id="path-analysis" class="text-xs bg-black bg-opacity-20 p-4 rounded-md space-y-2"></div>
+                 </div>
+                 <div>
+                     <h3 class="text-amber-300 mb-2">Unlocked Intel</h3>
+                     <div id="cs-insight" class="text-sm bg-black bg-opacity-20 p-4 rounded-md h-24"></div>
+                     <h3 class="text-amber-300 mt-4 mb-2">Decryption Method</h3>
+                     <div id="modal-pseudocode" class="pseudocode text-sm"></div>
+                 </div>
+             </div>
+             <div class="text-center">
+                <button id="next-level-button" class="mt-6 bg-green-800 hover:bg-green-700 text-amber-100 font-bold py-2 px-6 rounded-md">Next Transmission</button>
+            </div>
+        </div>
+    </div>
+    <div id="game-over-modal" class="modal fixed inset-0 justify-center items-center z-50">
+        <div class="modal-content p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-2 border-red-500">
+             <h2 class="text-3xl font-bold mb-4 text-red-500">TRANSMISSION LOST</h2>
+             <p id="game-over-text" class="mb-6 text-lg">The key was not found in time. The signal has degraded.</p>
+             <button id="retry-button" class="mt-4 bg-red-800 hover:bg-red-700 text-amber-100 font-bold py-2 px-6 rounded-md">Retry Intercept</button>
+        </div>
+    </div>
+
+    <script>
+        // UI Elements mapping...
+        const ui = {
+            lowerBound: document.getElementById('lower-bound'), upperBound: document.getElementById('upper-bound'),
+            feedback: document.getElementById('feedback'), guessInput: document.getElementById('guess-input'),
+            fireButton: document.getElementById('fire-button'), attempts: document.getElementById('attempts-display'),
+            level: document.getElementById('level-display'), score: document.getElementById('score-display'),
+            streak: document.getElementById('streak-display'), gameWrapper: document.getElementById('game-wrapper'),
+            elimLow: document.getElementById('eliminated-low'), elimHigh: document.getElementById('eliminated-high'),
+            scanLine: document.getElementById('scan-line'), introModal: document.getElementById('intro-modal'),
+            startMissionBtn: document.getElementById('start-mission-button'), winModal: document.getElementById('win-modal'),
+            levelStats: document.getElementById('level-stats'), modalPseudocode: document.getElementById('modal-pseudocode'),
+            nextLevelBtn: document.getElementById('next-level-button'), pathAnalysis: document.getElementById('path-analysis'),
+            csInsight: document.getElementById('cs-insight'), timerBar: document.getElementById('timer-bar'),
+            gameOverModal: document.getElementById('game-over-modal'), gameOverText: document.getElementById('game-over-text'),
+            retryButton: document.getElementById('retry-button'), staticOverlay: document.getElementById('static-overlay'),
+            signalStrengthFill: document.getElementById('signal-strength-fill')
+        };
+        
+        // Game state variables...
+        let min, max, target, attempts, currentLevel, audioCtx, totalScore, streak;
+        let timer, timerInterval;
+        let playerPath;
+        let hasJamming, jammingUsed;
+        
+        // Levels and insights data...
+        const levels = [ 
+            {range: 100, time: 30}, {range: 500, time: 45}, {range: 1000, time: 60}, 
+            {range: 5000, time: 75}, {range: 10000, time: 90, jamming: true},
+            {range: 50000, time: 90, maxAttempts: 15}, {range: 100000, time: 100, jamming: true, maxAttempts: 18}
+        ];
+        const csInsights = [
+            "Binary search has a time complexity of O(log n), making it incredibly efficient for large sorted datasets.",
+            "For a dataset of 1 million items, binary search takes at most 20 comparisons. A linear search could take 1 million.",
+            "Binary search is a 'divide and conquer' algorithm. It splits the problem in half with each step.",
+            "The prerequisite for binary search is that the data array must be sorted.",
+            "Binary search can be used not just for finding numbers, but for finding the root of equations or optimal parameters in machine learning.",
+            "The concept of binary search was first published in 1946, but the first bug-free implementation wasn't published until 1962."
+        ];
+
+        function initAudio() { 
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            switch(type){
+                case 'guess': osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
+                case 'low': osc.type = 'triangle'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); break;
+                case 'high': osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); break;
+                case 'hit': osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+                case 'fail': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.4); break;
+            }
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function startGame(levelIndex = 0) {
+            clearInterval(timerInterval);
+            currentLevel = levelIndex;
+            const levelData = levels[currentLevel];
+            min = 1; max = levelData.range;
+            target = Math.floor(Math.random() * (max - min + 1)) + min;
+            attempts = 0;
+            playerPath = [];
+            timer = levelData.time;
+            hasJamming = levelData.jamming || false;
+            jammingUsed = false;
+            
+            if(levelIndex === 0) { totalScore = 0; streak = 0; }
+            ui.level.textContent = `Mission: ${currentLevel + 1}`;
+            ui.score.textContent = `Score: ${totalScore}`;
+            ui.streak.textContent = `Streak: ${streak}`;
+            ui.attempts.textContent = `Attempts: 0${levelData.maxAttempts ? ` / ${levelData.maxAttempts}`: ''}`;
+            ui.lowerBound.textContent = min;
+            ui.upperBound.textContent = max;
+            ui.feedback.textContent = 'Awaiting Key...';
+            ui.feedback.className = 'h-10 text-center text-2xl font-bold text-amber-100 my-4';
+            ui.guessInput.value = '';
+            ui.guessInput.disabled = false;
+            ui.fireButton.disabled = false;
+            ui.gameWrapper.classList.remove('hit-effect');
+            updateEliminatedZones();
+            updateSignalStrength(null);
+            
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+
+        function updateTimer() {
+            timer--;
+            const timePercent = (timer / levels[currentLevel].time) * 100;
+            ui.timerBar.style.width = `${timePercent}%`;
+            if (timePercent < 25) ui.timerBar.style.backgroundColor = '#CD5C5C'; // Reddish
+            else if (timePercent < 50) ui.timerBar.style.backgroundColor = '#DAA520'; // Gold
+            else ui.timerBar.style.backgroundColor = '#6B8E23'; // Olive
+
+            if (timer < 0) {
+                gameOver("Time's up!");
+            }
+        }
+
+        function gameOver(reason) {
+            clearInterval(timerInterval);
+            playSound('fail');
+            ui.guessInput.disabled = true;
+            ui.fireButton.disabled = true;
+            ui.gameOverText.textContent = reason;
+            ui.staticOverlay.style.display = 'block';
+            setTimeout(() => {
+                ui.gameOverModal.style.display = 'flex';
+                ui.staticOverlay.style.display = 'none';
+            }, 500);
+            streak = 0; // Reset streak on failure
+        }
+
+        function handleGuess() {
+            const guess = parseInt(ui.guessInput.value);
+            const levelData = levels[currentLevel];
+            playerPath.push(guess);
+            playSound('guess');
+            
+            if (isNaN(guess) || guess < min || guess > max) {
+                 ui.feedback.textContent = 'INVALID KEY';
+                 ui.feedback.className = 'h-10 text-center text-2xl font-bold text-red-500 my-4';
+                 ui.gameWrapper.classList.add('miss-effect');
+                 setTimeout(() => ui.gameWrapper.classList.remove('miss-effect'), 300);
+                 playSound('fail');
+                 return;
+            }
+            
+            attempts++;
+            ui.attempts.textContent = `Attempts: ${attempts}${levelData.maxAttempts ? ` / ${levelData.maxAttempts}`: ''}`;
+            
+            let isJammed = hasJamming && !jammingUsed && attempts === 1;
+            let effectiveGuess = isJammed ? (guess < target ? target + 1 : target - 1) : guess;
+            if(isJammed) {
+                jammingUsed = true;
+                ui.feedback.textContent = 'INTERFERENCE!';
+                setTimeout(() => { handleFeedback(guess, isJammed, effectiveGuess) }, 1000);
+            } else {
+                handleFeedback(guess, isJammed, effectiveGuess);
+            }
+        }
+        
+        function handleFeedback(guess, isJammed, effectiveGuess) {
+             const levelData = levels[currentLevel];
+             const guessPercent = ((guess - 1) / (levelData.range - 1)) * 100;
+             ui.scanLine.style.left = `${guessPercent}%`;
+             ui.scanLine.style.opacity = 1;
+             setTimeout(() => ui.scanLine.style.opacity = 0, 300);
+
+            if (effectiveGuess === target) {
+                targetHit();
+            } else if (effectiveGuess < target) {
+                min = guess + 1;
+                ui.feedback.textContent = isJammed ? 'KEY IS LOWER' : 'KEY IS HIGHER';
+                ui.feedback.className = `h-10 text-center text-2xl font-bold ${isJammed ? 'text-blue-400' : 'text-yellow-400'} my-4`;
+                ui.lowerBound.textContent = min;
+                playSound(isJammed ? 'low' : 'high');
+            } else { // effectiveGuess > target
+                max = guess - 1;
+                ui.feedback.textContent = isJammed ? 'KEY IS HIGHER' : 'KEY IS LOWER';
+                ui.feedback.className = `h-10 text-center text-2xl font-bold ${isJammed ? 'text-yellow-400' : 'text-blue-400'} my-4`;
+                ui.upperBound.textContent = max;
+                playSound(isJammed ? 'high' : 'low');
+            }
+            updateEliminatedZones();
+            updateSignalStrength(guess);
+            ui.guessInput.value = '';
+            ui.guessInput.focus();
+
+            if (levelData.maxAttempts && attempts >= levelData.maxAttempts && effectiveGuess !== target) {
+                 gameOver("Maximum attempts reached!");
+            }
+        }
+
+        function updateSignalStrength(guess) {
+            if (guess === null) {
+                ui.signalStrengthFill.style.width = '0%';
+                return;
+            }
+            const range = levels[currentLevel].range;
+            const distance = Math.abs(guess - target);
+            // Use log scale to make it more sensitive when close
+            const closeness = Math.max(0, 1 - Math.log(distance + 1) / Math.log(range + 1));
+            ui.signalStrengthFill.style.width = `${closeness * 100}%`;
+        }
+        
+        function targetHit() {
+            clearInterval(timerInterval);
+            playSound('hit');
+            ui.feedback.textContent = `KEY FOUND: ${target}!`;
+            ui.feedback.className = 'h-10 text-center text-2xl font-bold text-green-400 my-4';
+            ui.guessInput.disabled = true;
+            ui.fireButton.disabled = true;
+            ui.gameWrapper.classList.add('hit-effect');
+            
+            const initialRange = levels[currentLevel].range;
+            const optimalGuesses = Math.ceil(Math.log2(initialRange));
+            
+            const timeBonus = timer * 10;
+            const efficiencyBonus = (attempts <= optimalGuesses) ? 5000 : (optimalGuesses / attempts * 5000);
+            const levelBonus = (currentLevel + 1) * 1000;
+            const isOptimal = attempts <= optimalGuesses;
+            if(isOptimal) streak++; else streak = 0;
+            const streakBonus = streak * 1500;
+            const scoreThisLevel = Math.round(timeBonus + efficiencyBonus + levelBonus + streakBonus);
+            totalScore += scoreThisLevel;
+            ui.score.textContent = `Score: ${totalScore}`;
+            ui.streak.textContent = `Streak: ${streak}`;
+
+            ui.levelStats.innerHTML = `<div>Score this Mission: <span class="font-bold text-amber-200">${scoreThisLevel}</span></div>
+                                     <div>Optimal Attempts: <span class="font-bold text-amber-200">${optimalGuesses}</span></div>
+                                     <div>Your Attempts: <span class="font-bold text-amber-200">${attempts}</span></div>
+                                     <div class="pt-2">Efficiency: <span class="font-bold ${isOptimal ? 'text-green-400' : 'text-yellow-400'}">${(optimalGuesses/attempts * 100).toFixed(0)}%</span></div>`;
+            
+            const optimalPath = getOptimalPath(1, initialRange, target);
+            ui.pathAnalysis.innerHTML = `<div class="analysis-path">Optimal Path: <span class="text-green-400">${optimalPath.join(' → ')}</span></div>
+                                         <div class="analysis-path">Your Path: <span class="text-yellow-400">${playerPath.join(' → ')}</span></div>`;
+            
+            ui.csInsight.textContent = csInsights[currentLevel % csInsights.length];
+            
+             ui.modalPseudocode.innerHTML = `<span>while low <= high:</span>\n  <span>  mid = (low + high) // 2</span>\n  <span class="text-green-400">  if guess == target: return mid</span>\n  <span>  if guess < target: low = mid + 1</span>\n  <span>  else: high = mid - 1</span>`;
+
+            setTimeout(() => ui.winModal.style.display = 'flex', 500);
+        }
+
+        function getOptimalPath(low, high, t) {
+            let path = [];
+            while(low <= high) {
+                let mid = Math.floor((low + high) / 2);
+                path.push(mid);
+                if(mid === t) return path;
+                if(mid < t) low = mid + 1;
+                else high = mid - 1;
+            }
+            return path;
+        }
+
+        function updateEliminatedZones() {
+            const range = levels[currentLevel].range;
+            const lowWidth = ((min - 1) / range) * 100;
+            const highWidth = ((range - max) / range) * 100;
+            ui.elimLow.style.width = `${lowWidth}%`;
+            ui.elimHigh.style.width = `${highWidth}%`;
+        }
+        
+        ui.fireButton.addEventListener('click', handleGuess);
+        ui.guessInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleGuess(); });
+        ui.nextLevelBtn.addEventListener('click', () => {
+            ui.winModal.style.display = 'none';
+            const nextLevelIndex = currentLevel + 1 >= levels.length ? currentLevel : currentLevel + 1; // Stay on last level if completed
+            startGame(nextLevelIndex);
+        });
+        ui.retryButton.addEventListener('click', () => {
+             ui.gameOverModal.style.display = 'none';
+             startGame(currentLevel);
+        });
+        ui.startMissionBtn.onclick = () => {
+            ui.introModal.style.display = 'none';
+            initAudio();
+            startGame();
+        };
+
+        window.onload = () => {
+             ui.introModal.style.display = 'flex';
+        };
+    </script>
+</body>
+</html>
+
