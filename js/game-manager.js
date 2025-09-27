@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: 'cosmic-rift-scanners.html',
+            file: 'test-iframe.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
