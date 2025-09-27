@@ -28,7 +28,7 @@ git add .
 git commit -m "Initial DSAG platform release"
 
 # Add remote origin (replace with your repository URL)
-git remote add origin https://github.com/triumphkiateh/DSAG-V0.git
+git remote add origin https://github.com/Triumph-KT/DSAG-V0.git
 
 # Push to main branch
 git push -u origin main
@@ -38,14 +38,14 @@ git push -u origin main
 
 1. Go to **Actions** tab in your repository
 2. Wait for the deployment workflow to complete
-3. Visit your site at: `https://triumphkiateh.github.io/DSAG-V0/`
+3. Visit your site at: `https://Triumph-KT.github.io/DSAG-V0/`
 
 ## 🔧 Local Development
 
 ### Quick Start
 ```bash
 # Clone repository
-git clone https://github.com/triumphkiateh/DSAG-V0.git
+git clone https://github.com/Triumph-KT/DSAG-V0.git
 cd DSAG-V0
 
 # Serve locally (choose one method)

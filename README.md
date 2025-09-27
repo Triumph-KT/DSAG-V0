@@ -2,11 +2,11 @@
 
 > Master algorithms through **play**, not **pain**
 
-[![Deploy to GitHub Pages](https://github.com/triumphkiateh/DSAG-V0/actions/workflows/deploy.yml/badge.svg)](https://github.com/triumphkiateh/DSAG-V0/actions/workflows/deploy.yml)
+[![Deploy to GitHub Pages](https://github.com/Triumph-KT/DSAG-V0/actions/workflows/deploy.yml/badge.svg)](https://github.com/Triumph-KT/DSAG-V0/actions/workflows/deploy.yml)
 
 ## 🎮 Live Demo
 
-**[Play DSAG Now](https://triumphkiateh.github.io/DSAG-V0/)**
+**[Play DSAG Now](https://Triumph-KT.github.io/DSAG-V0/)**
 
 ## 🚀 What is DSAG?
 
@@ -83,7 +83,7 @@ DSAG (Data Structures & Algorithms as Games) transforms computer science educati
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/triumphkiateh/DSAG-V0.git
+   git clone https://github.com/Triumph-KT/DSAG-V0.git
    cd DSAG-V0
    ```
 
@@ -183,9 +183,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact
 
-- **Website**: [DSAG Platform](https://triumphkiateh.github.io/DSAG-V0/)
-- **GitHub**: [triumphkiateh/DSAG-V0](https://github.com/triumphkiateh/DSAG-V0)
+- **Website**: [DSAG Platform](https://Triumph-KT.github.io/DSAG-V0/)
+- **GitHub**: [Triumph-KT/DSAG-V0](https://github.com/Triumph-KT/DSAG-V0)
 
 ---
 
-**Ready to revolutionize how we learn algorithms?** [Start playing now!](https://triumphkiateh.github.io/DSAG-V0/)
+**Ready to revolutionize how we learn algorithms?** [Start playing now!](https://Triumph-KT.github.io/DSAG-V0/)
