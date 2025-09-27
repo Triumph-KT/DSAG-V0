@@ -90,11 +90,14 @@ class GameManager {
      * Launch a specific game
      */
     launchGame(gameId) {
+        console.log('Launching game:', gameId);
         const config = this.gameConfigs.get(gameId);
         if (!config) {
             console.error(`Game config not found: ${gameId}`);
             return;
         }
+        
+        console.log('Game config found:', config);
         
         this.currentGame = gameId;
         this.isGameLoaded = false;
@@ -152,6 +155,7 @@ class GameManager {
     showGameContainer() {
         const container = document.getElementById('game-container');
         if (container) {
+            console.log('Showing game container');
             container.classList.remove('hidden');
             
             // Hide main content
@@ -159,6 +163,8 @@ class GameManager {
             if (mainContent) {
                 mainContent.style.display = 'none';
             }
+        } else {
+            console.error('Game container not found');
         }
     }
     
