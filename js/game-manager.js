@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: 'test-iframe.html',
+            file: 'cosmic-rift-scanners.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
@@ -96,26 +96,27 @@ class GameManager {
             return;
         }
         
-        this.currentGame = gameId;
-        this.isGameLoaded = false;
+        console.log('Launching game in new window:', config.file);
         
-        // Show game container
-        this.showGameContainer();
+        // Open game in new window/tab
+        const gameWindow = window.open(config.file, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
         
-        // Update game title
-        this.updateGameTitle(config.title);
-        
-        // Load game
-        this.loadGame(config.file);
-        
-        // Update navigation
-        if (window.dsagApp?.navigation) {
-            window.dsagApp.navigation.navigate(`games/${gameId}`, true);
-        }
-        
-        // Announce to screen readers
-        if (window.dsagApp?.announce) {
-            window.dsagApp.announce(`Loading ${config.title}`);
+        if (gameWindow) {
+            console.log('Game window opened successfully');
+            this.currentGame = gameId;
+            
+            // Update navigation
+            if (window.dsagApp?.navigation) {
+                window.dsagApp.navigation.navigate(`games/${gameId}`, true);
+            }
+            
+            // Announce to screen readers
+            if (window.dsagApp?.announce) {
+                window.dsagApp.announce(`Opening ${config.title} in new window`);
+            }
+        } else {
+            console.error('Failed to open game window - popup blocked?');
+            alert('Please allow popups for this site to play games, or try clicking the game link again.');
         }
     }
     
@@ -414,14 +415,6 @@ class GameManager {
      */
     closeGame() {
         if (this.currentGame) {
-            // Clear iframe source
-            if (this.gameFrame) {
-                this.gameFrame.src = '';
-            }
-            
-            // Hide game container
-            this.hideGameContainer();
-            
             // Reset state
             this.currentGame = null;
             this.isGameLoaded = false;
