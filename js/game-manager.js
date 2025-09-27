@@ -154,6 +154,7 @@ class GameManager {
         if (container) {
             console.log('Showing game container');
             container.classList.remove('hidden');
+            container.style.display = 'block';
             
             // Hide main content
             const mainContent = document.getElementById('main-content');
@@ -161,13 +162,20 @@ class GameManager {
                 mainContent.style.display = 'none';
             }
             
-            // Ensure iframe has proper dimensions
-            const iframe = document.getElementById('game-frame');
-            if (iframe) {
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.minHeight = '500px';
-            }
+            // Debug iframe dimensions
+            setTimeout(() => {
+                const iframe = document.getElementById('game-frame');
+                if (iframe) {
+                    const rect = iframe.getBoundingClientRect();
+                    console.log('Iframe dimensions:', {
+                        width: rect.width,
+                        height: rect.height,
+                        top: rect.top,
+                        left: rect.left,
+                        visible: rect.width > 0 && rect.height > 0
+                    });
+                }
+            }, 100);
         } else {
             console.error('Game container not found');
         }
