@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: '1.cosmic-rift-scanners.html',
+            file: 'cosmic-rift-scanners.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
@@ -30,7 +30,7 @@ class GameManager {
         
         this.gameConfigs.set('recursionauts', {
             title: 'Recursionauts',
-            file: '2.Recursionauts: The Echo Chamber.html',
+            file: 'recursionauts.html',
             description: 'Navigate the Depths of Recursion',
             difficulty: 'Advanced',
             rating: 5,
@@ -40,7 +40,7 @@ class GameManager {
         
         this.gameConfigs.set('enigma-protocol', {
             title: 'The Enigma Protocol',
-            file: '3.snipers intercept.html',
+            file: 'enigma-protocol.html',
             description: 'Decrypt Binary Search Mastery',
             difficulty: 'Intermediate',
             rating: 4,
@@ -50,7 +50,7 @@ class GameManager {
         
         this.gameConfigs.set('sorting-chef', {
             title: 'The Sorting Chef',
-            file: '4.kitchen rush.html',
+            file: 'sorting-chef.html',
             description: 'Master All 5 Sorting Algorithms',
             difficulty: 'Beginner to Advanced',
             rating: 5,
