@@ -358,9 +358,12 @@ class DSAGApp {
     }
 }
 
-// Initialize app when DOM is loaded
+// Initialize app when DOM is loaded and all scripts are ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.dsagApp = new DSAGApp();
+    // Wait a bit for all scripts to load
+    setTimeout(() => {
+        window.dsagApp = new DSAGApp();
+    }, 100);
 });
 
 // Export for testing
