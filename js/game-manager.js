@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: 'simple-test.html',
+            file: 'cosmic-rift-scanners.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
@@ -71,10 +71,12 @@ class GameManager {
         
         // Setup iframe event listeners
         this.gameFrame.addEventListener('load', () => {
+            console.log('Iframe loaded successfully');
             this.onGameLoaded();
         });
         
-        this.gameFrame.addEventListener('error', () => {
+        this.gameFrame.addEventListener('error', (e) => {
+            console.error('Iframe error:', e);
             this.onGameError();
         });
         
@@ -126,15 +128,19 @@ class GameManager {
             return;
         }
         
+        console.log('Loading game file:', filename);
+        
         // Show loading state
         this.showLoadingState();
         
         // Set iframe source
         this.gameFrame.src = filename;
+        console.log('Iframe src set to:', this.gameFrame.src);
         
         // Set loading timeout
         this.loadingTimeout = setTimeout(() => {
             if (!this.isGameLoaded) {
+                console.error('Game loading timeout for:', filename);
                 this.onGameTimeout();
             }
         }, 10000); // 10 second timeout
@@ -146,6 +152,7 @@ class GameManager {
     showGameContainer() {
         const container = document.getElementById('game-container');
         if (container) {
+            console.log('Showing game container');
             container.classList.remove('hidden');
             
             // Hide main content
@@ -153,6 +160,16 @@ class GameManager {
             if (mainContent) {
                 mainContent.style.display = 'none';
             }
+            
+            // Ensure iframe has proper dimensions
+            const iframe = document.getElementById('game-frame');
+            if (iframe) {
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.minHeight = '500px';
+            }
+        } else {
+            console.error('Game container not found');
         }
     }
     
@@ -227,14 +244,6 @@ class GameManager {
         
         if (this.loadingTimeout) {
             clearTimeout(this.loadingTimeout);
-        }
-        
-        // Check if iframe content is visible
-        const iframe = this.gameFrame;
-        if (iframe) {
-            console.log('Iframe dimensions:', iframe.offsetWidth, 'x', iframe.offsetHeight);
-            console.log('Iframe src:', iframe.src);
-            console.log('Iframe contentWindow:', iframe.contentWindow);
         }
         
         // Announce to screen readers
