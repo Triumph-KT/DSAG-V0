@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .content {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>🎮 Simple Test Game</h1>
+        <p>If you can see this, the iframe is working!</p>
+        <p>This is a basic test to verify GitHub Pages can display content in iframes.</p>
+        <p>Time: <span id="time"></span></p>
+    </div>
+    
+    <script>
+        function updateTime() {
+            document.getElementById('time').textContent = new Date().toLocaleTimeString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>

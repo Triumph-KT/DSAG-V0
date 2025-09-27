@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: 'cosmic-rift-scanners.html',
+            file: 'simple-test.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
@@ -227,6 +227,14 @@ class GameManager {
         
         if (this.loadingTimeout) {
             clearTimeout(this.loadingTimeout);
+        }
+        
+        // Check if iframe content is visible
+        const iframe = this.gameFrame;
+        if (iframe) {
+            console.log('Iframe dimensions:', iframe.offsetWidth, 'x', iframe.offsetHeight);
+            console.log('Iframe src:', iframe.src);
+            console.log('Iframe contentWindow:', iframe.contentWindow);
         }
         
         // Announce to screen readers
