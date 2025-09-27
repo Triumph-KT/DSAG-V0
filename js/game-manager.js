@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: 'cosmic-rift-scanners.html',
+            file: 'test-game.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
@@ -71,10 +71,12 @@ class GameManager {
         
         // Setup iframe event listeners
         this.gameFrame.addEventListener('load', () => {
+            console.log('Iframe load event fired');
             this.onGameLoaded();
         });
         
-        this.gameFrame.addEventListener('error', () => {
+        this.gameFrame.addEventListener('error', (e) => {
+            console.error('Iframe error event fired:', e);
             this.onGameError();
         });
         
@@ -126,15 +128,19 @@ class GameManager {
             return;
         }
         
+        console.log('Loading game:', filename);
+        
         // Show loading state
         this.showLoadingState();
         
         // Set iframe source
         this.gameFrame.src = filename;
+        console.log('Iframe src set to:', this.gameFrame.src);
         
         // Set loading timeout
         this.loadingTimeout = setTimeout(() => {
             if (!this.isGameLoaded) {
+                console.error('Game loading timeout for:', filename);
                 this.onGameTimeout();
             }
         }, 10000); // 10 second timeout
