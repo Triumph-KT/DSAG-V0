@@ -20,7 +20,7 @@ class GameManager {
     setupGameConfigs() {
         this.gameConfigs.set('cosmic-rift', {
             title: 'Cosmic Rift Scanners',
-            file: 'test-game.html',
+            file: 'cosmic-rift-scanners.html',
             description: 'Master the Two-Pointer Technique',
             difficulty: 'Intermediate',
             rating: 5,
@@ -71,12 +71,10 @@ class GameManager {
         
         // Setup iframe event listeners
         this.gameFrame.addEventListener('load', () => {
-            console.log('Iframe load event fired');
             this.onGameLoaded();
         });
         
-        this.gameFrame.addEventListener('error', (e) => {
-            console.error('Iframe error event fired:', e);
+        this.gameFrame.addEventListener('error', () => {
             this.onGameError();
         });
         
@@ -90,14 +88,11 @@ class GameManager {
      * Launch a specific game
      */
     launchGame(gameId) {
-        console.log('Launching game:', gameId);
         const config = this.gameConfigs.get(gameId);
         if (!config) {
             console.error(`Game config not found: ${gameId}`);
             return;
         }
-        
-        console.log('Game config found:', config);
         
         this.currentGame = gameId;
         this.isGameLoaded = false;
@@ -131,19 +126,15 @@ class GameManager {
             return;
         }
         
-        console.log('Loading game:', filename);
-        
         // Show loading state
         this.showLoadingState();
         
         // Set iframe source
         this.gameFrame.src = filename;
-        console.log('Iframe src set to:', this.gameFrame.src);
         
         // Set loading timeout
         this.loadingTimeout = setTimeout(() => {
             if (!this.isGameLoaded) {
-                console.error('Game loading timeout for:', filename);
                 this.onGameTimeout();
             }
         }, 10000); // 10 second timeout
@@ -155,7 +146,6 @@ class GameManager {
     showGameContainer() {
         const container = document.getElementById('game-container');
         if (container) {
-            console.log('Showing game container');
             container.classList.remove('hidden');
             
             // Hide main content
@@ -163,8 +153,6 @@ class GameManager {
             if (mainContent) {
                 mainContent.style.display = 'none';
             }
-        } else {
-            console.error('Game container not found');
         }
     }
     
