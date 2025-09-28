@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Source+Code+Pro&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -69,6 +69,13 @@
         .modal { display: none; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px); }
         .modal-content { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* NEW: Juiciness animation */
+        @keyframes squish {
+            0%, 100% { transform: scale(1, 1); }
+            50% { transform: scale(1.2, 0.8); }
+        }
+        .squish { animation: squish 0.3s ease-out; }
+
         #prep-line { position: relative; } /* Parent for absolute positioned ingredients */
 
         /* --- Soup Pot Mini-Game Styles --- */
@@ -134,6 +141,31 @@
             transform: scale(1.2);
             box-shadow: 0 0 15px #f59e0b;
         }
+        
+        /* NEW: Pseudocode styles */
+        #pseudocode-container pre {
+            background-color: #282c34; /* Dark background for code */
+            color: #abb2bf; /* Light text */
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        #pseudocode-container .code-line {
+            display: block;
+            transition: background-color 0.3s ease;
+        }
+        #pseudocode-container .highlight-code {
+            background-color: #4d5b7a;
+            border-left: 4px solid #61afef;
+            padding-left: 8px;
+        }
+        #pseudocode-container .keyword { color: #c678dd; }
+        #pseudocode-container .comment { color: #5c6370; }
+        #pseudocode-container .variable { color: #e5c07b; }
+        #pseudocode-container .function { color: #61afef; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
@@ -145,10 +177,13 @@
 
         <main class="bg-stone-300 p-4 sm:p-6 rounded-2xl shadow-2xl border-4 border-stone-400">
             <!-- HUD -->
-            <div class="grid grid-cols-3 gap-4 mb-4 bg-white/50 p-2 rounded-lg text-gray-700 text-center">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 bg-white/50 p-2 rounded-lg text-gray-700 text-center">
                 <div id="level-display" class="font-bold text-lg">Service: 1</div>
                 <div id="chef-title-display" class="font-bold text-lg">Line Cook</div>
                 <div id="score-display" class="font-bold text-lg">Score: 0</div>
+                <!-- IMPROVEMENT: Added complexity counters -->
+                <div id="comparisons-display" class="font-bold text-lg text-sky-700">Comparisons: 0</div>
+                <div id="swaps-display" class="font-bold text-lg text-red-700">Swaps: 0</div>
             </div>
             <!-- Timer -->
             <div id="timer-bar" class="w-full bg-gray-200 rounded-full h-4 border-2 border-gray-400 shadow-inner">
@@ -174,6 +209,8 @@
                  <div id="action-buttons" class="flex justify-center gap-8 mt-4">
                     <button id="action-btn-1" class="btn bg-red-500 text-white font-bold py-4 px-8 rounded-lg text-2xl">SWAP</button>
                     <button id="action-btn-2" class="btn bg-sky-500 text-white font-bold py-4 px-8 rounded-lg text-2xl">KEEP</button>
+                    <!-- NEW: Auto-Chef Button -->
+                    <button id="auto-chef-btn" class="btn bg-amber-500 text-white font-bold py-4 px-8 rounded-lg text-2xl">🤖 AUTO</button>
                 </div>
             </div>
         </main>
@@ -198,22 +235,41 @@
     </div>
 
     <div id="review-modal" class="modal fixed inset-0 flex justify-center items-center z-50">
-        <div class="modal-content bg-amber-50 p-8 rounded-lg shadow-2xl max-w-3xl w-full border-4 border-amber-800">
+        <div class="modal-content bg-amber-50 p-8 rounded-lg shadow-2xl max-w-5xl w-full border-4 border-amber-800">
             <h2 id="review-title" class="text-4xl font-bold mb-4 text-amber-900 text-center">Order Up!</h2>
-            <div class="flex items-center gap-6">
-                <div id="customer-reaction" class="text-8xl"></div>
-                <div class="grid grid-cols-2 gap-6 w-full">
-                    <div class="bg-white p-4 rounded shadow-inner">
-                         <h3 class="text-2xl font-bold mb-2 text-amber-900">Performance Review</h3>
-                         <div id="review-stats" class="space-y-2 text-amber-800"></div>
-                         <div id="achievements-unlocked" class="mt-2 text-yellow-500 font-bold"></div>
+            <div class="grid md:grid-cols-2 gap-6">
+                 <!-- Left Column: Stats & Reaction -->
+                <div>
+                    <div class="flex items-center gap-6 mb-4">
+                        <div id="customer-reaction" class="text-8xl"></div>
+                        <div class="w-full">
+                            <h3 class="text-2xl font-bold mb-2 text-amber-900">Performance Review</h3>
+                            <div id="review-stats" class="space-y-1 text-amber-800 bg-white p-3 rounded shadow-inner"></div>
+                            <div id="achievements-unlocked" class="mt-2 text-yellow-500 font-bold"></div>
+                        </div>
                     </div>
-                    <div class="bg-white p-4 rounded shadow-inner">
+                     <!-- Reflection/MCQ Section -->
+                    <div id="reflection-container" class="mt-4 bg-white p-4 rounded shadow-inner hidden">
+                        <h3 id="reflection-question" class="text-xl font-bold mb-3 text-amber-900 text-center"></h3>
+                        <div id="reflection-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                        <p id="reflection-feedback" class="mt-3 text-center font-semibold h-12"></p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Insight & Pseudocode -->
+                <div>
+                     <div class="bg-white p-4 rounded shadow-inner mb-4">
                         <h3 class="text-2xl font-bold mb-2 text-amber-900">Chef's Insight</h3>
                         <p id="review-insight" class="text-amber-800"></p>
                     </div>
+                    <!-- NEW: Pseudocode Display -->
+                    <div id="pseudocode-container" class="bg-white p-4 rounded shadow-inner">
+                         <h3 class="text-2xl font-bold mb-2 text-amber-900">Algorithm View</h3>
+                         <pre><code id="pseudocode-display"></code></pre>
+                    </div>
                 </div>
             </div>
+
             <div class="text-center mt-6">
                  <button id="next-level-btn" class="btn bg-sky-500 text-white font-bold py-3 px-8 rounded-lg text-xl">Next Service</button>
                  <div id="end-game-choices" class="hidden justify-center gap-4">
@@ -223,6 +279,15 @@
             </div>
         </div>
     </div>
+
+    <!-- NEW: Chaos Event Modal -->
+    <div id="chaos-fire-event" class="modal fixed inset-0 flex-col justify-center items-center z-50 hidden" style="background-color: rgba(255, 100, 0, 0.5); backdrop-filter: blur(5px);">
+        <div class="text-9xl animate-bounce">🔥</div>
+        <h2 class="text-5xl font-bold text-white my-4" style="text-shadow: 2px 2px 4px #000;">KITCHEN FIRE!</h2>
+        <p class="text-2xl text-white mb-4" style="text-shadow: 1px 1px 2px #000;">Click the extinguisher to put it out!</p>
+        <div id="extinguisher-btn" class="text-8xl cursor-pointer hover:scale-110 transition-transform">🧯</div>
+    </div>
+
 
     <script>
         // UI Elements
@@ -248,16 +313,32 @@
             challengeModeBtn: document.getElementById('challenge-mode-btn'),
             customerReaction: document.getElementById('customer-reaction'),
             achievementsUnlocked: document.getElementById('achievements-unlocked'),
+            comparisonsDisplay: document.getElementById('comparisons-display'),
+            swapsDisplay: document.getElementById('swaps-display'),
+            reflectionContainer: document.getElementById('reflection-container'),
+            reflectionQuestion: document.getElementById('reflection-question'),
+            reflectionOptions: document.getElementById('reflection-options'),
+            reflectionFeedback: document.getElementById('reflection-feedback'),
+            chaosFireEvent: document.getElementById('chaos-fire-event'),
+            extinguisherBtn: document.getElementById('extinguisher-btn'),
+            // NEW: Added UI for pedagogical features
+            autoChefBtn: document.getElementById('auto-chef-btn'),
+            pseudocodeDisplay: document.getElementById('pseudocode-display'),
         };
         
         // Game State & Data...
+        let initialIngredients = [];
         let ingredientElements = [];
         let currentLevel = 0;
         let totalScore = 0;
         let mistakes = 0;
-        let gameState = 'paused';
+        let comparisons = 0;
+        let swaps = 0;
+        let optimalSwaps = 0; // NEW: Track optimal swaps
+        let gameState = 'paused'; // 'paused', 'sorting', 'auto-sorting'
         let gameMode = 'normal'; // 'normal' or 'challenge'
-        let timer, timerInterval;
+        let timer, timerInterval, chaosInterval;
+        let isChaosEventActive = false;
         let audioCtx;
         let unlockedAchievements = new Set();
         let currentCustomer;
@@ -279,11 +360,59 @@
         
         const CHEF_TITLES = ["Apprentice", "Line Cook", "Prep Chef", "Sous Chef", "Head Chef", "Executive Chef", "Master Chef"];
 
+        // NEW: Reflection questions in MCQ format
+        const reflectionQuestions = [
+            {
+                levelIndices: [1, 5, 6], // First Pass, Full Order, Kitchen Rush
+                question: "After the very first full pass, where is the heaviest ingredient guaranteed to be?",
+                options: [ "At the beginning.", "In the middle.", "At the very end.", "It's random." ],
+                correctAnswer: 2,
+                explanation: "Correct! Each pass 'bubbles' the largest unsorted value to the end of the line."
+            },
+            {
+                levelIndices: [2], // Nearly Sorted
+                question: "Why was sorting a 'nearly sorted' order so much faster?",
+                options: [ "Because there were fewer ingredients.", "The timer was longer.", "Few swaps were needed.", "It was just luck." ],
+                correctAnswer: 2,
+                explanation: "Exactly! Bubble Sort is fastest when items are already close to their final spot, requiring very few swaps."
+            },
+            {
+                levelIndices: [3], // Reverse Order
+                question: "A reverse-sorted order is the 'worst-case' for Bubble Sort. Why?",
+                options: [ "It causes the most mistakes.", "It requires the maximum number of swaps.", "The ingredients are heavier.", "The timer runs faster." ],
+                correctAnswer: 1,
+                explanation: "That's right. Every single item needs to be swapped with every other item, leading to the maximum possible number of swaps."
+            },
+            {
+                levelIndices: [4], // Duplicates
+                question: "What happens when Bubble Sort compares two ingredients of equal weight?",
+                options: [ "It swaps them anyway.", "It doesn't swap them.", "The game crashes.", "It asks the player to decide." ],
+                correctAnswer: 1,
+                explanation: "Correct! A 'stable' sort like Bubble Sort doesn't swap equal items, preserving their original relative order."
+            },
+            {
+                levelIndices: [0, 5, 6], // General question for intro and later levels
+                question: "What is the primary action in one step of a Bubble Sort?",
+                options: [ "Finding the smallest item.", "Comparing two adjacent items.", "Splitting the list in half.", "Shuffling all ingredients randomly." ],
+                correctAnswer: 1,
+                explanation: "You got it! Bubble Sort works by repeatedly comparing adjacent pairs and swapping them if they're in the wrong order."
+            }
+        ];
+
         const algorithm_data = {
             bubbleSort: {
                 name: "The Bubble Sort",
                 description: "The heaviest ingredients will 'bubble up' to the right side of the line. Compare each pair of ingredients from left to right. If the left one is heavier, SWAP them. After each full pass, the heaviest unsorted ingredient will be in its correct spot!",
-                insight: "Bubble Sort gets its name because the largest values gradually 'bubble' to their proper place. It's simple, but not very efficient for large orders! Its performance is O(n²)."
+                insight: "Bubble Sort gets its name because the largest values gradually 'bubble' to their proper place. It's simple, but not very efficient for large orders! Its performance is O(n²).",
+                pseudocode: [
+                    `<span class="keyword">do</span>`,
+                    `  <span class="variable">swapped</span> = <span class="keyword">false</span>`,
+                    `  <span class="keyword">for</span> i = 0 <span class="keyword">to</span> n - 1:`,
+                    `    <span class="keyword">if</span> <span class="variable">list</span>[i] > <span class="variable">list</span>[i + 1]:`,
+                    `      <span class="function">swap</span>(<span class="variable">list</span>[i], <span class="variable">list</span>[i + 1])`,
+                    `      <span class="variable">swapped</span> = <span class="keyword">true</span>`,
+                    `<span class="keyword">while</span> <span class="variable">swapped</span>`
+                ]
             }
         };
 
@@ -294,12 +423,16 @@
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
              switch(type){
-                case 'compare': osc.type = 'sine'; osc.frequency.setValueAtTime(440, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
-                case 'chop': osc.type = 'sine'; osc.frequency.setValueAtTime(330, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
-                case 'correct': osc.type = 'triangle'; osc.frequency.setValueAtTime(660, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); break;
-                case 'wrong': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
-                case 'sorted_ding': osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4); break;
-                case 'win': osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); setTimeout(()=>osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.1), 100); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+                 case 'compare': osc.type = 'sine'; osc.frequency.setValueAtTime(440, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
+                 case 'chop': osc.type = 'sine'; osc.frequency.setValueAtTime(330, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
+                 case 'correct': osc.type = 'triangle'; osc.frequency.setValueAtTime(660, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2); break;
+                 case 'wrong': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+                 case 'sorted_ding': osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4); break;
+                 case 'win': osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); setTimeout(()=>osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.1), 100); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
+                 case 'sizzle': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(1800, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
+                 case 'slice': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(600, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); break;
+                 case 'alarm': osc.type = 'square'; osc.frequency.setValueAtTime(900, audioCtx.currentTime); setTimeout(() => osc.frequency.setValueAtTime(700, audioCtx.currentTime + 0.2), 200); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4); break;
+                 case 'extinguish': osc.type = 'triangle'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3); break;
             }
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 0.4);
@@ -316,7 +449,6 @@
             document.getElementById('learning-goal').textContent = levelData.learningGoal;
             document.getElementById('recipe-desc').innerHTML = `<p>${algo.description}</p><br><p class="text-center font-bold text-rose-600">GOAL: Arrange ingredients by weight, from lowest to highest.</p>`;
             
-            // Render Progress Map
             ui.progressMap.innerHTML = '';
             levels.forEach((level, index) => {
                 const node = document.createElement('div');
@@ -335,7 +467,7 @@
             ui.recipeModal.style.display = 'none';
             initAudio();
             generateOrder();
-            runSort();
+            runSort(false); // Start in manual mode
         });
         
         ui.nextLevelBtn.addEventListener('click', () => {
@@ -355,17 +487,34 @@
         ui.playAgainBtn.addEventListener('click', () => handleEndGame('normal'));
         ui.challengeModeBtn.addEventListener('click', () => handleEndGame('challenge'));
         
+        // NEW: Optimal swap calculation
+        function countInversions(arr) {
+            let inversions = 0;
+            for (let i = 0; i < arr.length - 1; i++) {
+                for (let j = i + 1; j < arr.length; j++) {
+                    if (arr[i] > arr[j]) {
+                        inversions++;
+                    }
+                }
+            }
+            return inversions;
+        }
+
         function generateOrder() {
             const levelData = levels[currentLevel];
-            let ingredientsData = [];
             ui.prepLine.innerHTML = '';
             ui.soupPot.innerHTML = '';
             mistakes = 0;
+            comparisons = 0;
+            swaps = 0;
             stabilityMessageShown = false;
             currentCustomer = CUSTOMER_AVATARS[Math.floor(Math.random() * CUSTOMER_AVATARS.length)];
             
             ui.levelDisplay.textContent = `Service: ${currentLevel + 1}`;
             ui.scoreDisplay.textContent = `Score: ${totalScore}`;
+            ui.comparisonsDisplay.textContent = `Comparisons: 0`;
+            ui.swapsDisplay.textContent = `Swaps: 0`;
+            
             if (gameMode === 'challenge') {
                 ui.chefTitleDisplay.innerHTML = '🔥 Challenge Mode 🔥';
             } else {
@@ -404,19 +553,19 @@
                         tempIngredients[4].value = val;
                      }
                     break;
-                case 'random':
-                default: break;
+                case 'random': default: break;
             }
-            ingredientsData = tempIngredients;
+            initialIngredients = tempIngredients;
+            optimalSwaps = countInversions(initialIngredients.map(item => item.value));
             
-            ingredientElements = createIngredientElements(ingredientsData, ui.soupPot);
+            ingredientElements = createIngredientElements(initialIngredients, ui.soupPot);
             reorderAndAnimateInPot(ingredientElements);
         }
         
         function createIngredientElements(data, parent) {
             parent.innerHTML = '';
             return data.map(item => {
-                const height = 80; // Bubbles are uniform size
+                const height = 80;
                 const ingredientEl = document.createElement('div');
                 ingredientEl.className = 'ingredient bg-stone-100 items-center justify-center rounded-lg w-20 sm:w-20';
                 ingredientEl.style.height = `${height}px`;
@@ -441,9 +590,9 @@
         }
         
         function updateTimer() {
-             if (gameState !== 'paused') timer--;
+             if (gameState !== 'paused' && !isChaosEventActive) timer--;
              let timeForLevel = levels[currentLevel].time;
-             if (gameMode === 'challenge') timeForLevel *= 0.7; // 30% less time in challenge mode
+             if (gameMode === 'challenge') timeForLevel *= 0.7;
              const timePercent = Math.max(0, (timer / timeForLevel) * 100);
              ui.timerBarFill.style.width = `${timePercent}%`;
              if (timePercent < 25) ui.timerBarFill.style.backgroundColor = '#ef4444';
@@ -454,39 +603,99 @@
         
         function gameOver(message) {
             clearInterval(timerInterval);
+            clearInterval(chaosInterval);
             gameState = 'paused';
             ui.feedbackText.textContent = message;
             ui.swapBtn.disabled = true;
             ui.keepBtn.disabled = true;
+            ui.autoChefBtn.disabled = true;
             setTimeout(() => { showRecipeCard(); }, 2000);
         }
 
-        async function runSort() {
+        async function runSort(isAuto = false) {
             const levelData = levels[currentLevel];
             timer = levelData.time;
-            if (gameMode === 'challenge') timer *= 0.7; // Apply challenge mode time reduction
+            if (gameMode === 'challenge') timer *= 0.7;
             clearInterval(timerInterval);
+            clearInterval(chaosInterval);
             timerInterval = setInterval(updateTimer, 1000);
+            chaosInterval = setInterval(tryTriggerChaosEvent, 5000);
             updateTimer();
-            gameState = 'sorting';
-            await interactiveBubbleSort();
+            if (isAuto) {
+                gameState = 'auto-sorting';
+                await autoBubbleSort();
+            } else {
+                gameState = 'sorting';
+                await interactiveBubbleSort();
+            }
             if (gameState !== 'paused') levelComplete();
+        }
+
+        function showReflectionQuestion() {
+            const relevantQuestion = reflectionQuestions.find(q => q.levelIndices.includes(currentLevel));
+            if (!relevantQuestion) {
+                ui.reflectionContainer.classList.add('hidden');
+                if (currentLevel < levels.length - 1) ui.nextLevelBtn.classList.remove('hidden');
+                return;
+            }
+            ui.reflectionContainer.classList.remove('hidden');
+            ui.reflectionQuestion.textContent = relevantQuestion.question;
+            ui.reflectionOptions.innerHTML = '';
+            ui.reflectionFeedback.textContent = '';
+            ui.reflectionFeedback.className = 'mt-3 text-center font-semibold h-12';
+            relevantQuestion.options.forEach((optionText, index) => {
+                const optionBtn = document.createElement('button');
+                optionBtn.className = 'btn bg-amber-200 text-amber-900 font-bold py-2 px-4 rounded-lg text-md';
+                optionBtn.textContent = optionText;
+                optionBtn.addEventListener('click', () => {
+                    Array.from(ui.reflectionOptions.children).forEach(btn => btn.disabled = true);
+                    if (index === relevantQuestion.correctAnswer) {
+                        optionBtn.classList.remove('bg-amber-200');
+                        optionBtn.classList.add('bg-green-500', 'text-white');
+                        ui.reflectionFeedback.textContent = relevantQuestion.explanation;
+                        ui.reflectionFeedback.classList.add('text-green-700');
+                        playSound('correct');
+                    } else {
+                        optionBtn.classList.remove('bg-amber-200');
+                        optionBtn.classList.add('bg-red-500', 'text-white');
+                        ui.reflectionFeedback.textContent = "Not quite. " + relevantQuestion.explanation;
+                        ui.reflectionFeedback.classList.add('text-red-700');
+                        ui.reflectionOptions.children[relevantQuestion.correctAnswer].classList.remove('bg-amber-200');
+                        ui.reflectionOptions.children[relevantQuestion.correctAnswer].classList.add('bg-green-500', 'text-white');
+                        playSound('wrong');
+                    }
+                    if (currentLevel < levels.length - 1) ui.nextLevelBtn.classList.remove('hidden');
+                }, { once: true });
+                ui.reflectionOptions.appendChild(optionBtn);
+            });
+        }
+        
+        // NEW: Function to display pseudocode
+        function displayPseudocode(highlights = {}) {
+            const codeLines = algorithm_data.bubbleSort.pseudocode;
+            ui.pseudocodeDisplay.innerHTML = codeLines.map((line, index) => {
+                let className = 'code-line';
+                if (highlights[index]) {
+                    className += ' highlight-code';
+                }
+                return `<span class="${className}">${line}</span>`;
+            }).join('');
         }
 
         function levelComplete() {
             clearInterval(timerInterval);
+            clearInterval(chaosInterval);
             playSound('win');
             gameState = 'paused';
             let timeForLevel = levels[currentLevel].time;
             if (gameMode === 'challenge') timeForLevel *= 0.7;
             const timeBonus = Math.max(0, timer * 100);
-            const mistakePenalty = mistakes * (gameMode === 'challenge' ? 1000 : 500); // Higher penalty
+            const mistakePenalty = mistakes * (gameMode === 'challenge' ? 1000 : 500);
             const levelScore = Math.max(0, 5000 + timeBonus - mistakePenalty);
             totalScore += levelScore;
             ui.scoreDisplay.textContent = `Score: ${totalScore}`;
             
             if (currentLevel >= levels.length -1) {
-                // Game Won
                 document.getElementById('review-title').textContent = `Congratulations, Master Chef!`;
                 document.getElementById('review-insight').textContent = "You've mastered the Bubble Sort! You can now handle any order, no matter how scrambled. Up for a real challenge?";
                 ui.customerReaction.textContent = '🏆';
@@ -495,11 +704,19 @@
             } else {
                 document.getElementById('review-title').textContent = `Service ${currentLevel + 1} Complete!`;
                 document.getElementById('review-insight').textContent = algorithm_data.bubbleSort.insight;
-                ui.nextLevelBtn.classList.remove('hidden');
+                ui.nextLevelBtn.classList.add('hidden');
                 ui.endGameChoices.classList.add('hidden');
             }
-
-            document.getElementById('review-stats').innerHTML = `<div>Level Score: <span class="font-bold text-amber-900">${levelScore}</span></div><div>Mistakes: <span class="font-bold text-red-600">${mistakes}</span></div><div>Total Score: <span class="font-bold text-amber-900">${totalScore}</span></div>`;
+            
+            document.getElementById('review-stats').innerHTML = `
+                <div>Level Score: <span class="font-bold text-amber-900">${levelScore}</span></div>
+                <div>Mistakes: <span class="font-bold text-red-600">${mistakes}</span></div>
+                <div>Comparisons: <span class="font-bold text-sky-700">${comparisons}</span></div>
+                <div>Your Swaps: <span class="font-bold text-red-700">${swaps}</span></div>
+                <div>Optimal Swaps: <span class="font-bold text-green-700">${optimalSwaps}</span></div>
+                <hr class="my-1 border-stone-300">
+                <div>Total Score: <span class="font-bold text-amber-900">${totalScore}</span></div>
+            `;
             
             const timePercent = timer > 0 ? (timer / timeForLevel) : 0;
             let reactionFace = '😠';
@@ -513,6 +730,10 @@
                 unlockedAchievements.add(`perfect_${currentLevel}_${gameMode}`);
             }
             ui.achievementsUnlocked.textContent = achievementText;
+            
+            showReflectionQuestion();
+            displayPseudocode({0:true, 2:true, 3:true, 4:true, 6:true}); // Highlight all lines at the end
+            
             ui.reviewModal.style.display = 'flex';
         }
         
@@ -520,11 +741,15 @@
             return new Promise(resolve => {
                 ui.swapBtn.disabled = false;
                 ui.keepBtn.disabled = false;
-                const onSwap = () => { if (!shouldSwap) { mistakes++; playSound('wrong'); } else { playSound('correct'); } cleanup(); resolve(true); };
-                const onKeep = () => { if (shouldSwap) { mistakes++; playSound('wrong'); } else { playSound('correct'); } cleanup(); resolve(false); };
+                ui.autoChefBtn.disabled = false;
+                const onSwap = () => { if (!shouldSwap) { mistakes++; playSound('wrong'); } else { playSound('sizzle'); } cleanup(); resolve({action: 'swap'}); };
+                const onKeep = () => { if (shouldSwap) { mistakes++; playSound('wrong'); } else { playSound('correct'); } cleanup(); resolve({action: 'keep'}); };
+                const onAuto = () => { cleanup(); resolve({action: 'auto'}); };
+
                 ui.swapBtn.onclick = onSwap;
                 ui.keepBtn.onclick = onKeep;
-                function cleanup() { ui.swapBtn.disabled = true; ui.keepBtn.disabled = true; ui.swapBtn.onclick = null; ui.keepBtn.onclick = null; }
+                ui.autoChefBtn.onclick = onAuto;
+                function cleanup() { ui.swapBtn.disabled = true; ui.keepBtn.disabled = true; ui.autoChefBtn.disabled = true; ui.swapBtn.onclick = null; ui.keepBtn.onclick = null; ui.autoChefBtn.onclick = null; }
             });
         }
         
@@ -532,7 +757,6 @@
         
         async function interactiveBubbleSort() {
             ui.actionButtons.style.display = 'flex';
-            const levelData = levels[currentLevel];
             let n = ingredientElements.length;
             let pass = 0;
             let swapped;
@@ -548,6 +772,8 @@
 
                 for (let i = 0; i < n - 1 - pass; i++) {
                     if (gameState === 'paused') return;
+                    while(isChaosEventActive) { await sleep(500); }
+
                     const el1 = ingredientElements[i];
                     const el2 = ingredientElements[i + 1];
                     
@@ -556,12 +782,24 @@
                     ui.feedbackText.textContent = `Compare...`;
                     await sleep(400);
 
+                    comparisons++;
+                    ui.comparisonsDisplay.textContent = `Comparisons: ${comparisons}`;
+
                     const val1 = parseInt(el1.dataset.value);
                     const val2 = parseInt(el2.dataset.value);
                     const shouldSwap = val1 > val2;
-                    const playerActionIsSwap = await waitForPlayerAction(shouldSwap);
+                    const playerChoice = await waitForPlayerAction(shouldSwap);
 
-                    if (levelData.case === 'duplicates' && val1 === val2 && !playerActionIsSwap && !stabilityMessageShown) {
+                    if(playerChoice.action === 'auto') {
+                        gameState = 'auto-sorting';
+                        // Pass current state to auto sorter to finish
+                        await autoBubbleSort(i, pass, sortedCount);
+                        return; // Exit interactive loop as auto mode will finish
+                    }
+
+                    const playerActionIsSwap = (playerChoice.action === 'swap');
+
+                    if (val1 === val2 && !playerActionIsSwap && !stabilityMessageShown) {
                         const originalText = ui.feedbackText.textContent;
                         ui.feedbackText.textContent = "Equal items don't swap. That's stability!";
                         stabilityMessageShown = true;
@@ -570,6 +808,13 @@
                     }
 
                     if (playerActionIsSwap) {
+                        if (shouldSwap) {
+                            el1.classList.add('squish');
+                            el2.classList.add('squish');
+                            setTimeout(() => { el1.classList.remove('squish'); el2.classList.remove('squish'); }, 300);
+                        }
+                        swaps++;
+                        ui.swapsDisplay.textContent = `Swaps: ${swaps}`;
                         [ingredientElements[i], ingredientElements[i + 1]] = [ingredientElements[i + 1], ingredientElements[i]];
                         reorderAndAnimateInPot(ingredientElements.slice(0, n - pass));
                         swapped = true;
@@ -584,6 +829,7 @@
                 if (n - 1 - pass >= 0) {
                     ui.feedbackText.textContent = `Heaviest ingredient is sorted!`;
                     playSound('sorted_ding');
+                    playSound('slice');
                     
                     const sortedElement = ingredientElements[n - 1 - pass];
                     sortedElement.classList.add('sorted');
@@ -603,16 +849,93 @@
                 pass++;
             } while (swapped && pass < n - 1);
             
+            // Finish sorting if not already fully sorted
             if (gameState === 'paused') return;
+            finishSortAnimation(sortedCount);
+        }
+
+        // NEW: Auto-Chef sorting function
+        async function autoBubbleSort(start_i = 0, start_pass = 0, start_sorted_count = 0) {
+            ui.swapBtn.disabled = true;
+            ui.keepBtn.disabled = true;
+            ui.autoChefBtn.disabled = true;
+            ui.feedbackText.textContent = `Auto-Chef is taking over!`;
+            await sleep(1500);
+
+            let n = ingredientElements.length;
+            let pass = start_pass;
+            let sortedCount = start_sorted_count;
             
-            ui.passCounter.classList.remove('visible');
+            do {
+                let swapped_in_pass = false;
+                if(pass >= start_pass) {
+                    ui.passCounter.textContent = `Pass #${pass + 1}`;
+                    ui.passCounter.classList.add('visible');
+                }
+
+                for (let i = (pass === start_pass) ? start_i : 0; i < n - 1 - pass; i++) {
+                     if (gameState === 'paused') return;
+                     while(isChaosEventActive) { await sleep(500); }
+
+                    const el1 = ingredientElements[i];
+                    const el2 = ingredientElements[i + 1];
+                    
+                    el1.classList.add('highlight');
+                    el2.classList.add('highlight');
+                    comparisons++;
+                    ui.comparisonsDisplay.textContent = `Comparisons: ${comparisons}`;
+                    await sleep(1000);
+
+                    const val1 = parseInt(el1.dataset.value);
+                    const val2 = parseInt(el2.dataset.value);
+
+                    if (val1 > val2) {
+                        swaps++;
+                        ui.swapsDisplay.textContent = `Swaps: ${swaps}`;
+                        [ingredientElements[i], ingredientElements[i + 1]] = [ingredientElements[i + 1], ingredientElements[i]];
+                        reorderAndAnimateInPot(ingredientElements.slice(0, n - pass));
+                        swapped_in_pass = true;
+                        playSound('chop');
+                        await sleep(1000);
+                    }
+                    el1.classList.remove('highlight');
+                    el2.classList.remove('highlight');
+                }
+
+                if (n - 1 - pass >= 0) {
+                    playSound('sorted_ding');
+                    const sortedElement = ingredientElements[n - 1 - pass];
+                    sortedElement.classList.add('sorted');
+                    
+                    ui.prepLine.appendChild(sortedElement);
+                    const prepLineWidth = ui.prepLine.offsetWidth;
+                    const itemWidth = 80; const gap = 8;
+                    const totalSortedWidth = (sortedCount + 1) * itemWidth + sortedCount * gap;
+                    
+                    sortedElement.style.borderRadius = '0.5rem';
+                    sortedElement.style.top = `20px`;
+                    sortedElement.style.left = `${prepLineWidth - totalSortedWidth}px`;
+                    sortedCount++;
+                    await sleep(1500);
+                }
+                pass++;
+                 // We must check if a swap happened IN THIS PASS. `do-while` from parent function isn't enough.
+                if (!swapped_in_pass && start_i === 0) break;
+
+            } while (pass < n - 1);
+            
+            if (gameState === 'paused') return;
+            finishSortAnimation(sortedCount);
+        }
+        
+        function finishSortAnimation(sortedCount) {
+             ui.passCounter.classList.remove('visible');
             ui.feedbackText.textContent = `Fully Sorted!`;
             let unsorted = ingredientElements.filter(el => !el.classList.contains('sorted'));
             unsorted.reverse().forEach(el => {
                  el.classList.add('sorted');
                  ui.prepLine.insertBefore(el, ui.prepLine.firstChild);
             });
-            // Final arrangement of sorted items on prep line
             const allSorted = Array.from(ui.prepLine.children);
             const prepLineWidth = ui.prepLine.offsetWidth;
             const itemWidth = 80; const gap = 8;
@@ -624,10 +947,30 @@
                  el.style.borderRadius = '0.5rem';
             });
         }
+        
+        // --- Chaos Event Logic ---
+        function tryTriggerChaosEvent() {
+            if (gameState === 'sorting' && !isChaosEventActive) {
+                if (Math.random() < 0.1) {
+                    isChaosEventActive = true;
+                    ui.chaosFireEvent.style.display = 'flex';
+                    playSound('alarm');
+                }
+            }
+        }
+
+        ui.extinguisherBtn.addEventListener('click', () => {
+            if (isChaosEventActive) {
+                isChaosEventActive = false;
+                ui.chaosFireEvent.style.display = 'none';
+                playSound('extinguish');
+            }
+        });
 
         // Initial Load
         window.onload = showRecipeCard;
     </script>
 </body>
 </html>
+
 
