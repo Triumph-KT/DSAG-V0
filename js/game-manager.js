@@ -57,6 +57,17 @@ class GameManager {
             emoji: '👨‍🍳',
             color: 'from-green-500 to-emerald-500'
         });
+        
+        this.gameConfigs.set('window-master', {
+            title: 'Window Master – The Sliding Window Adventure',
+            file: 'window-master/index.html',
+            description: 'Master Sliding Window Algorithms',
+            difficulty: 'Beginner to Advanced',
+            rating: 5,
+            emoji: '🪟',
+            color: 'from-purple-500 to-indigo-500',
+            type: 'modular'
+        });
     }
     
     /**

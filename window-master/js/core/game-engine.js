@@ -120,6 +120,10 @@ function initializeGameForLevel() {
 
 function loadLevel() {
     console.log('loadLevel called');
+    console.log('Current sector index:', gameState.currentSector);
+    console.log('Current level index:', gameState.currentLevel);
+    console.log('Current stage:', gameState.currentStage);
+    console.log('Available sectors:', gameSectors.length);
     try {
         const sector = gameSectors[gameState.currentSector];
         const level = sector.levels[gameState.currentLevel];
@@ -567,7 +571,10 @@ function showLevelCompleteModal(isBruteForce) {
 
     if (isBruteForce) {
         title.textContent = "Brute Force Complete";
-        summary.textContent = `You found the maximum sum: ${gameState.bruteForce.maxSum}. Now, witness true efficiency.`;
+        const currentSectorData = gameSectors[gameState.currentSector];
+        const sectorType = currentSectorData?.targetType || 'maximum';
+        const targetText = sectorType === 'minimum' ? 'minimum' : 'maximum';
+        summary.textContent = `You found the ${targetText} sum: ${gameState.bruteForce.maxSum}. Now, witness true efficiency.`;
         statsSteps.textContent = gameState.bruteForce.steps;
         statsEnergy.textContent = `${gameState.bruteForce.energyUsed}`;
         statsEnergy.className = 'text-2xl font-bold text-red-400';
@@ -587,8 +594,12 @@ function showLevelCompleteModal(isBruteForce) {
 
         viewTheoryBtn.onclick = () => showTheoryScroll('s1l1_brute');
     } else {
-        title.textContent = "Sector 1 Complete!";
-        summary.textContent = `Excellent work! You found the maximum sum: ${gameState.slidingWindow.maxSum} with elegant efficiency.`;
+        const sectorNumber = gameState.currentSector + 1;
+        title.textContent = `Sector ${sectorNumber} Complete!`;
+        const currentSectorData = gameSectors[gameState.currentSector];
+        const sectorType = currentSectorData?.targetType || 'maximum';
+        const targetText = sectorType === 'minimum' ? 'minimum' : 'maximum';
+        summary.textContent = `Excellent work! You found the ${targetText} sum: ${gameState.slidingWindow.maxSum} with elegant efficiency.`;
         statsSteps.textContent = gameState.slidingWindow.steps;
         
         statsEnergy.textContent = `${gameState.slidingWindow.energyCost}`;

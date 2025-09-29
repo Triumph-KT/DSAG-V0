@@ -91,8 +91,8 @@ class NavigationManager {
     selectSector(sectorId) {
         console.log(`Selected sector: ${sectorId}`);
         
-        // For now, only sector 1 is available
-        if (sectorId === 1) {
+        // Available sectors: 1 and 2
+        if (sectorId === 1 || sectorId === 2) {
             this.showLevelSelection(sectorId);
         } else {
             // Show appropriate message based on sector
@@ -117,7 +117,7 @@ class NavigationManager {
         console.log(`Selected level: ${levelId} in sector: ${this.currentSector}`);
         
         // Check if level is available
-        if (this.currentSector === 1 && (levelId >= 1 && levelId <= 5)) {
+        if ((this.currentSector === 1 || this.currentSector === 2) && (levelId >= 1 && levelId <= 5)) {
             this.startGame(levelId);
         } else {
             alert('This level is coming soon!');

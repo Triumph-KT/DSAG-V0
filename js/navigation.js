@@ -54,6 +54,12 @@ class NavigationManager {
             handler: () => this.showGame('bubble-sort-chef')
         });
         
+        this.routes.set('games/window-master', {
+            element: 'game-container',
+            title: 'Window Master – The Sliding Window Adventure - DSAG',
+            handler: () => this.showGame('window-master')
+        });
+        
         this.routes.set('learning-path', {
             element: 'learning-path',
             title: 'Learning Path - DSAG',
