@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Window Master - The Sliding Window Adventure</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0c0a1e] to-[#1e1b4b]">
+
+    <!-- Sound Controls -->
+    <div class="sound-controls">
+        <button id="sound-toggle" class="sound-btn" title="Toggle Sound">
+            🔊
+        </button>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="text-center p-8 game-card rounded-2xl max-w-4xl w-full fade-in">
+        <h1 class="font-cinzel text-4xl md:text-5xl font-bold text-violet-300 mb-4">Window Master</h1>
+        <p class="text-lg text-gray-300 mb-2">The Sliding Window Adventure</p>
+        <p class="text-gray-400 mb-8">Hone your algorithmic magic by mastering the art of the sliding window. Turn brute force into elegant efficiency and become a true code wizard.</p>
+        <button id="start-game-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-lg text-xl">
+            Begin Your Training
+        </button>
+    </div>
+
+    <!-- Sector Selection Screen -->
+    <div id="sector-selection-screen" class="hidden max-w-6xl w-full p-6 game-card rounded-2xl">
+        <div class="text-center mb-8">
+            <h2 class="font-cinzel text-3xl md:text-4xl font-bold text-violet-300 mb-4">Choose Your Sector</h2>
+            <p class="text-gray-400">Select a sector to begin your sliding window mastery journey</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Sector 1 - Available -->
+            <div class="sector-card available" data-sector="1">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-violet-300">Sector 1</h3>
+                    <span class="status-badge available">Available</span>
+                </div>
+                <h4 class="text-lg font-semibold text-yellow-300 mb-2">Maximum Sum – Fixed Window</h4>
+                <p class="text-gray-400 text-sm mb-4">Introduction to the fundamental concept of a fixed-size sliding window to find the maximum sum in a subarray.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-500">Levels: 5</span>
+                    <span class="text-xs text-gray-500 ml-4">Difficulty: Beginner</span>
+                </div>
+            </div>
+
+            <!-- Sector 2 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="2">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 2</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Minimum Sum – Fixed Window</h4>
+                <p class="text-gray-600 text-sm mb-4">Master the art of finding minimum sums using sliding window techniques.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Beginner</span>
+                </div>
+            </div>
+
+            <!-- Sector 3 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="3">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 3</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Variable Window – Target Sum</h4>
+                <p class="text-gray-600 text-sm mb-4">Learn to work with variable-sized windows to find target sums.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Intermediate</span>
+                </div>
+            </div>
+
+            <!-- Sector 4 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="4">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 4</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">String Problems – Distinct Characters</h4>
+                <p class="text-gray-600 text-sm mb-4">Apply sliding window to string problems with character counting.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Intermediate</span>
+                </div>
+            </div>
+
+            <!-- Sector 5 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="5">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 5</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Maximum/Minimum in Dynamic Window</h4>
+                <p class="text-gray-600 text-sm mb-4">Master dynamic window sizing for complex optimization problems.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Advanced</span>
+                </div>
+            </div>
+
+            <!-- Sector 6 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="6">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 6</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Multiple Arrays</h4>
+                <p class="text-gray-600 text-sm mb-4">Handle complex problems involving multiple arrays and windows.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Advanced</span>
+                </div>
+            </div>
+
+            <!-- Sector 7 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="7">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 7</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Nested Windows</h4>
+                <p class="text-gray-600 text-sm mb-4">Master sliding windows inside sliding windows for advanced problems.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Expert</span>
+                </div>
+            </div>
+
+            <!-- Sector 8 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="8">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 8</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Edge Cases & Pitfalls</h4>
+                <p class="text-gray-600 text-sm mb-4">Practice resilience with edge cases and common pitfalls.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Expert</span>
+                </div>
+            </div>
+
+            <!-- Sector 9 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="9">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 9</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Large Data / Performance</h4>
+                <p class="text-gray-600 text-sm mb-4">Focus on complexity and performance with large datasets.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Expert</span>
+                </div>
+            </div>
+
+            <!-- Sector 10 - Coming Soon -->
+            <div class="sector-card coming-soon" data-sector="10">
+                <div class="sector-header">
+                    <h3 class="font-cinzel text-xl text-gray-500">Sector 10</h3>
+                    <span class="status-badge coming-soon">Coming Soon</span>
+                </div>
+                <h4 class="text-lg font-semibold text-gray-500 mb-2">Master Challenges</h4>
+                <p class="text-gray-600 text-sm mb-4">Mix and match advanced techniques for competitive programming.</p>
+                <div class="sector-stats">
+                    <span class="text-xs text-gray-600">Levels: 5</span>
+                    <span class="text-xs text-gray-600 ml-4">Difficulty: Master</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <button id="back-to-welcome-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">
+                Back to Welcome
+            </button>
+        </div>
+    </div>
+
+    <!-- Level Selection Screen -->
+    <div id="level-selection-screen" class="hidden max-w-4xl w-full p-6 game-card rounded-2xl">
+        <div class="text-center mb-8">
+            <h2 id="level-selection-title" class="font-cinzel text-3xl md:text-4xl font-bold text-violet-300 mb-4">Sector 1: Maximum Sum</h2>
+            <p class="text-gray-400">Choose a level to begin your training</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Level 1 - Available -->
+            <div class="level-card available" data-level="1">
+                <div class="level-header">
+                    <h3 class="font-cinzel text-lg text-violet-300">Level 1</h3>
+                    <span class="status-badge available">Available</span>
+                </div>
+                <h4 class="text-md font-semibold text-yellow-300 mb-2">Fixed Window Basics</h4>
+                <p class="text-gray-400 text-sm mb-4">Find the maximum sum of 3 consecutive scores in a magical scroll.</p>
+                <div class="level-stats">
+                    <span class="text-xs text-gray-500">Window Size: 3</span>
+                    <span class="text-xs text-gray-500 ml-4">Difficulty: Beginner</span>
+                </div>
+            </div>
+
+            <!-- Level 2 - Available -->
+            <div class="level-card available" data-level="2">
+                <div class="level-header">
+                    <h3 class="font-cinzel text-lg text-violet-300">Level 2</h3>
+                    <span class="status-badge available">Available</span>
+                </div>
+                <h4 class="text-md font-semibold text-yellow-300 mb-2">Smaller Window Challenge</h4>
+                <p class="text-gray-400 text-sm mb-4">Find the maximum sum of 2 consecutive scores in a smaller array.</p>
+                <div class="level-stats">
+                    <span class="text-xs text-gray-500">Window Size: 2</span>
+                    <span class="text-xs text-gray-500 ml-4">Difficulty: Beginner</span>
+                </div>
+            </div>
+
+            <!-- Level 3 - Available -->
+            <div class="level-card available" data-level="3">
+                <div class="level-header">
+                    <h3 class="font-cinzel text-lg text-violet-300">Level 3</h3>
+                    <span class="status-badge available">Available</span>
+                </div>
+                <h4 class="text-md font-semibold text-yellow-300 mb-2">Larger Window Challenge</h4>
+                <p class="text-gray-400 text-sm mb-4">Find the maximum sum of 5 consecutive scores in a larger array.</p>
+                <div class="level-stats">
+                    <span class="text-xs text-gray-500">Window Size: 5</span>
+                    <span class="text-xs text-gray-500 ml-4">Difficulty: Beginner</span>
+                </div>
+            </div>
+
+            <!-- Level 4 - Available -->
+            <div class="level-card available" data-level="4">
+                <div class="level-header">
+                    <h3 class="font-cinzel text-lg text-violet-300">Level 4</h3>
+                    <span class="status-badge available">Available</span>
+                </div>
+                <h4 class="text-md font-semibold text-yellow-300 mb-2">Negative Numbers</h4>
+                <p class="text-gray-400 text-sm mb-4">Handle arrays with both positive and negative numbers.</p>
+                <div class="level-stats">
+                    <span class="text-xs text-gray-500">Window Size: 3</span>
+                    <span class="text-xs text-gray-500 ml-4">Difficulty: Intermediate</span>
+                </div>
+            </div>
+
+            <!-- Level 5 - Available -->
+            <div class="level-card available" data-level="5">
+                <div class="level-header">
+                    <h3 class="font-cinzel text-lg text-violet-300">Level 5</h3>
+                    <span class="status-badge available">Available</span>
+                </div>
+                <h4 class="text-md font-semibold text-yellow-300 mb-2">Large Array Performance</h4>
+                <p class="text-gray-400 text-sm mb-4">Experience the power of sliding window on a very large array.</p>
+                <div class="level-stats">
+                    <span class="text-xs text-gray-500">Window Size: 4</span>
+                    <span class="text-xs text-gray-500 ml-4">Difficulty: Intermediate</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <button id="back-to-sectors-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300">
+                📚 Back to All Sectors
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden max-w-7xl w-full p-6 game-card rounded-2xl">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center border-b border-violet-700/50 pb-4 mb-4">
+            <div>
+                <h2 id="sector-title" class="font-cinzel text-2xl md:text-3xl text-violet-300">Sector 1: Maximum Sum</h2>
+                <p id="level-title" class="text-gray-400">Level 1.1: Brute Force Magic</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <div class="w-48">
+                    <span class="text-sm font-semibold text-green-400">Energy</span>
+                    <div class="w-full bg-gray-700 rounded-full h-4 border border-green-500/50">
+                        <div id="energy-bar" class="bg-green-500 h-full rounded-full progress-bar-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div class="relative w-48">
+                    <span class="text-sm font-semibold text-yellow-400">Sector XP</span>
+                    <div class="w-full bg-gray-700 rounded-full h-4 border border-yellow-500/50">
+                        <div id="xp-bar" class="bg-yellow-500 h-full rounded-full progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                    <div id="xp-popup" class="hidden absolute right-0 top-0 text-yellow-300 font-bold">+25 XP</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Content -->
+        <main id="game-content" class="my-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <p id="problem-description" class="text-lg text-center mb-6 p-4 bg-violet-900/30 rounded-lg border border-violet-700/50">
+                    A magical scroll contains exam scores. Find the maximum sum of 3 consecutive scores to unlock the next chamber.
+                </p>
+
+                <!-- Array Visualization -->
+                <div id="array-container" class="flex justify-center items-center space-x-2 md:space-x-4 my-8 min-h-[80px]">
+                    <!-- JS will populate this -->
+                </div>
+
+                <!-- Player Interaction Area -->
+                <div id="interaction-area" class="text-center mt-6">
+                    <!-- Content will be dynamically set by JS -->
+                </div>
+            </div>
+
+            <!-- Computed Sums Log -->
+            <div class="lg:col-span-1 sums-log-container">
+                <div class="game-card p-4 h-full flex flex-col">
+                    <div class="flex justify-between items-center border-b border-violet-700/50 pb-2 mb-2">
+                        <h3 class="font-cinzel text-lg text-violet-300">Computed Sums</h3>
+                        <button id="toggle-log-btn" class="text-gray-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div id="sums-log-content" class="flex-grow overflow-y-auto pr-2 space-y-2 text-sm">
+                        <!-- Log entries will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Level Complete Modal -->
+    <div id="level-complete-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-2xl w-full text-center fade-in">
+            <h3 id="level-complete-title" class="font-cinzel text-3xl text-yellow-300 mb-4">Level Complete!</h3>
+            <p id="level-complete-summary" class="text-lg mb-6">You have mastered the brute force approach. Now, witness true efficiency.</p>
+            <div class="flex justify-around mb-8">
+                <div>
+                    <p class="text-gray-400 text-sm">Steps Taken</p>
+                    <p id="stats-steps" class="text-2xl font-bold">4</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Energy Cost</p>
+                    <p id="stats-energy" class="text-2xl font-bold text-red-400">100</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Mistakes Made</p>
+                    <p id="stats-mistakes" class="text-2xl font-bold">0</p>
+                </div>
+            </div>
+            <button id="next-stage-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-lg text-xl">
+                Learn Advanced Magic
+            </button>
+            <button id="view-theory-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg text-xl ml-4">
+                View Theory Scroll
+            </button>
+        </div>
+    </div>
+
+    <!-- Theory Scroll Modal -->
+    <div id="theory-scroll-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-3xl w-full fade-in">
+            <h3 id="theory-scroll-title" class="font-cinzel text-3xl text-sky-300 mb-4">Insight Scroll Unlocked</h3>
+            <div id="theory-content" class="text-gray-300 space-y-4 prose prose-invert max-w-none">
+                <!-- Theory content will be loaded here -->
+            </div>
+             <button id="close-theory-btn" class="mt-8 btn-primary text-white font-bold py-2 px-6 rounded-lg">
+                Close Scroll
+            </button>
+        </div>
+    </div>
+
+    <!-- Result Selection Modal -->
+    <div id="result-selection-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-4xl w-full text-center fade-in">
+            <h3 id="result-selection-title" class="font-cinzel text-3xl text-yellow-300 mb-4">Choose the Correct Answer</h3>
+            <p id="result-selection-instruction" class="text-lg mb-6">From all the sums you computed, which one is the <span id="target-type">maximum</span>?</p>
+            
+            <div id="result-options-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                <!-- Result options will be populated by JS -->
+            </div>
+            
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-result-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-lg text-xl" disabled>
+                    Confirm Answer
+                </button>
+                <button id="hint-result-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg text-xl">
+                    Need a Hint?
+                </button>
+            </div>
+            
+            <p id="result-feedback" class="mt-4 text-lg hidden"></p>
+        </div>
+    </div>
+
+    <!-- Final Summary Modal -->
+    <div id="final-summary-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-3xl w-full text-center fade-in">
+            <h3 class="font-cinzel text-3xl text-yellow-300 mb-6">Performance Comparison</h3>
+            <div class="grid grid-cols-2 gap-4 text-left">
+                <!-- Brute Force Column -->
+                <div class="p-4 bg-red-900/30 rounded-lg border border-red-500/50">
+                    <h4 class="font-cinzel text-xl text-red-400 mb-4">Brute Force Magic</h4>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-300">Steps Taken:</span>
+                        <span id="summary-bf-steps" class="text-2xl font-bold">4</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Energy Cost:</span>
+                        <span id="summary-bf-energy" class="text-2xl font-bold">100</span>
+                    </div>
+                     <div class="flex justify-between items-center mt-2">
+                        <span class="text-gray-300 text-sm">Mistakes Made:</span>
+                        <span id="summary-bf-mistakes" class="text-xl font-bold">0</span>
+                    </div>
+                </div>
+                <!-- Sliding Window Column -->
+                <div class="p-4 bg-green-900/30 rounded-lg border border-green-500/50">
+                    <h4 class="font-cinzel text-xl text-green-400 mb-4">Sliding Window Magic</h4>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-300">Steps Taken:</span>
+                        <span id="summary-sw-steps" class="text-2xl font-bold">3</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Energy Cost:</span>
+                        <span id="summary-sw-energy" class="text-2xl font-bold">16</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-gray-300 text-sm">Mistakes Made:</span>
+                        <span id="summary-sw-mistakes" class="text-xl font-bold">0</span>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-6 text-gray-400">Notice the dramatic difference in energy cost. This is the power of efficient algorithms!</p>
+            
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                <button id="restart-level-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg text-lg transition-all duration-300">
+                    🔄 Restart Level
+                </button>
+                <button id="back-to-sector-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg text-lg transition-all duration-300">
+                    📚 Back to Sector
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Core Modules -->
+    <script src="js/core/ui-manager.js"></script>
+    <script src="js/core/progress-tracker.js"></script>
+    <script src="js/core/sound-manager.js"></script>
+    <script src="js/core/result-selection-manager.js"></script>
+    <script src="js/core/navigation-manager.js"></script>
+    <script src="js/core/game-engine.js"></script>
+    <script src="js/sectors/sector-1.js"></script>
+</body>
+</html>

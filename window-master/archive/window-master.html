@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Window Master - The Sliding Window Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a1e;
+            color: #e0e0e0;
+        }
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        .game-card {
+            background-color: rgba(20, 18, 42, 0.8);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #8B5CF6, #6D28D9);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.7);
+        }
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        .progress-bar-fill {
+            transition: width 0.5s ease-in-out;
+        }
+        .array-element {
+            transition: all 0.3s ease;
+            transform: scale(1);
+        }
+        .array-element.highlight {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px #fef08a; /* A magical yellow glow */
+            border-color: #fef08a;
+        }
+        .array-element.banish {
+            animation: banish 1.5s ease-in-out forwards;
+        }
+        .array-element.summon {
+            animation: summon 1.5s ease-in-out forwards;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        @keyframes banish {
+            0% { transform: scale(1.1); box-shadow: 0 0 15px #fef08a; border-color: #fef08a; }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px #f87171; border-color: #f87171; }
+            100% { transform: scale(1); box-shadow: none; border-color: #8B5CF6; }
+        }
+        @keyframes summon {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.2); box-shadow: 0 0 20px #4ade80; border-color: #4ade80; opacity: 1; }
+            100% { transform: scale(1.1); box-shadow: 0 0 15px #fef08a; border-color: #fef08a; opacity: 1; }
+        }
+        @keyframes xp-float {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+        }
+        @keyframes log-highlight-anim {
+            0% { background-color: rgba(167, 139, 250, 0.4); }
+            100% { background-color: transparent; }
+        }
+        .log-entry-highlight {
+            animation: log-highlight-anim 1s ease-out;
+        }
+        .xp-popup-animate {
+            animation: xp-float 1.5s ease-out forwards;
+        }
+        .sums-log-container ::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sums-log-container ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        .sums-log-container ::-webkit-scrollbar-thumb {
+            background: #8B5CF6;
+            border-radius: 4px;
+        }
+        .sums-log-container ::-webkit-scrollbar-thumb:hover {
+            background: #6D28D9;
+        }
+        
+        /* Sound System Styles */
+        .sound-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .sound-btn {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .sound-btn:hover {
+            background: rgba(139, 92, 246, 0.4);
+            transform: translateY(-1px);
+        }
+        .sound-btn.muted {
+            opacity: 0.5;
+            background: rgba(100, 100, 100, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#0c0a1e] to-[#1e1b4b]">
+
+    <!-- Sound Controls -->
+    <div class="sound-controls">
+        <button id="sound-toggle" class="sound-btn" title="Toggle Sound">
+            🔊
+        </button>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="text-center p-8 game-card rounded-2xl max-w-2xl w-full fade-in">
+        <h1 class="font-cinzel text-4xl md:text-5xl font-bold text-violet-300 mb-4">Window Master</h1>
+        <p class="text-lg text-gray-300 mb-2">The Sliding Window Adventure</p>
+        <p class="text-gray-400 mb-8">Hone your algorithmic magic by mastering the art of the sliding window. Turn brute force into elegant efficiency and become a true code wizard.</p>
+        <button id="start-game-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-lg text-xl">
+            Begin Your Training
+        </button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="hidden max-w-7xl w-full p-6 game-card rounded-2xl">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center border-b border-violet-700/50 pb-4 mb-4">
+            <div>
+                <h2 id="sector-title" class="font-cinzel text-2xl md:text-3xl text-violet-300">Sector 1: Maximum Sum</h2>
+                <p id="level-title" class="text-gray-400">Level 1.1: Brute Force Magic</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <div class="w-48">
+                    <span class="text-sm font-semibold text-green-400">Energy</span>
+                    <div class="w-full bg-gray-700 rounded-full h-4 border border-green-500/50">
+                        <div id="energy-bar" class="bg-green-500 h-full rounded-full progress-bar-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div class="relative w-48">
+                    <span class="text-sm font-semibold text-yellow-400">Sector XP</span>
+                    <div class="w-full bg-gray-700 rounded-full h-4 border border-yellow-500/50">
+                        <div id="xp-bar" class="bg-yellow-500 h-full rounded-full progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                    <div id="xp-popup" class="hidden absolute right-0 top-0 text-yellow-300 font-bold">+25 XP</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Content -->
+        <main id="game-content" class="my-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <p id="problem-description" class="text-lg text-center mb-6 p-4 bg-violet-900/30 rounded-lg border border-violet-700/50">
+                    A magical scroll contains exam scores. Find the maximum sum of 3 consecutive scores to unlock the next chamber.
+                </p>
+
+                <!-- Array Visualization -->
+                <div id="array-container" class="flex justify-center items-center space-x-2 md:space-x-4 my-8 min-h-[80px]">
+                    <!-- JS will populate this -->
+                </div>
+
+                <!-- Player Interaction Area -->
+                <div id="interaction-area" class="text-center mt-6">
+                    <!-- Content will be dynamically set by JS -->
+                </div>
+            </div>
+
+            <!-- Computed Sums Log -->
+            <div class="lg:col-span-1 sums-log-container">
+                <div class="game-card p-4 h-full flex flex-col">
+                    <div class="flex justify-between items-center border-b border-violet-700/50 pb-2 mb-2">
+                        <h3 class="font-cinzel text-lg text-violet-300">Computed Sums</h3>
+                        <button id="toggle-log-btn" class="text-gray-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                        </button>
+                    </div>
+                    <div id="sums-log-content" class="flex-grow overflow-y-auto pr-2 space-y-2 text-sm">
+                        <!-- Log entries will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Level Complete Modal -->
+    <div id="level-complete-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-2xl w-full text-center fade-in">
+            <h3 id="level-complete-title" class="font-cinzel text-3xl text-yellow-300 mb-4">Level Complete!</h3>
+            <p id="level-complete-summary" class="text-lg mb-6">You have mastered the brute force approach. Now, witness true efficiency.</p>
+            <div class="flex justify-around mb-8">
+                <div>
+                    <p class="text-gray-400 text-sm">Steps Taken</p>
+                    <p id="stats-steps" class="text-2xl font-bold">4</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Energy Cost</p>
+                    <p id="stats-energy" class="text-2xl font-bold text-red-400">100</p>
+                </div>
+                <div>
+                    <p class="text-gray-400 text-sm">Mistakes Made</p>
+                    <p id="stats-mistakes" class="text-2xl font-bold">0</p>
+                </div>
+            </div>
+            <button id="next-stage-btn" class="btn-primary text-white font-bold py-3 px-8 rounded-lg text-xl">
+                Learn Advanced Magic
+            </button>
+            <button id="view-theory-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-8 rounded-lg text-xl ml-4">
+                View Theory Scroll
+            </button>
+        </div>
+    </div>
+
+    <!-- Theory Scroll Modal -->
+    <div id="theory-scroll-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-3xl w-full fade-in">
+            <h3 id="theory-scroll-title" class="font-cinzel text-3xl text-sky-300 mb-4">Insight Scroll Unlocked</h3>
+            <div id="theory-content" class="text-gray-300 space-y-4 prose prose-invert max-w-none">
+                <!-- Theory content will be loaded here -->
+            </div>
+             <button id="close-theory-btn" class="mt-8 btn-primary text-white font-bold py-2 px-6 rounded-lg">
+                Close Scroll
+            </button>
+        </div>
+    </div>
+
+    <!-- Final Summary Modal -->
+    <div id="final-summary-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4">
+        <div class="game-card rounded-2xl p-8 max-w-3xl w-full text-center fade-in">
+            <h3 class="font-cinzel text-3xl text-yellow-300 mb-6">Performance Comparison</h3>
+            <div class="grid grid-cols-2 gap-4 text-left">
+                <!-- Brute Force Column -->
+                <div class="p-4 bg-red-900/30 rounded-lg border border-red-500/50">
+                    <h4 class="font-cinzel text-xl text-red-400 mb-4">Brute Force Magic</h4>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-300">Steps Taken:</span>
+                        <span id="summary-bf-steps" class="text-2xl font-bold">4</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Energy Cost:</span>
+                        <span id="summary-bf-energy" class="text-2xl font-bold">100</span>
+                    </div>
+                     <div class="flex justify-between items-center mt-2">
+                        <span class="text-gray-300 text-sm">Mistakes Made:</span>
+                        <span id="summary-bf-mistakes" class="text-xl font-bold">0</span>
+                    </div>
+                </div>
+                <!-- Sliding Window Column -->
+                <div class="p-4 bg-green-900/30 rounded-lg border border-green-500/50">
+                    <h4 class="font-cinzel text-xl text-green-400 mb-4">Sliding Window Magic</h4>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-300">Steps Taken:</span>
+                        <span id="summary-sw-steps" class="text-2xl font-bold">3</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">Energy Cost:</span>
+                        <span id="summary-sw-energy" class="text-2xl font-bold">16</span>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-gray-300 text-sm">Mistakes Made:</span>
+                        <span id="summary-sw-mistakes" class="text-xl font-bold">0</span>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-6 text-gray-400">Notice the dramatic difference in energy cost. This is the power of efficient algorithms!</p>
+            <button id="play-again-btn" class="mt-8 btn-primary text-white font-bold py-3 px-8 rounded-lg text-xl">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- DOM Elements ---
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const startGameBtn = document.getElementById('start-game-btn');
+
+        // Game UI Elements
+        const sectorTitle = document.getElementById('sector-title');
+        const levelTitle = document.getElementById('level-title');
+        const energyBar = document.getElementById('energy-bar');
+        const xpBar = document.getElementById('xp-bar');
+        const problemDescription = document.getElementById('problem-description');
+        const arrayContainer = document.getElementById('array-container');
+        const interactionArea = document.getElementById('interaction-area');
+        const sumsLogContent = document.getElementById('sums-log-content');
+        const toggleLogBtn = document.getElementById('toggle-log-btn');
+
+        // Modals
+        const levelCompleteModal = document.getElementById('level-complete-modal');
+        const theoryScrollModal = document.getElementById('theory-scroll-modal');
+        const finalSummaryModal = document.getElementById('final-summary-modal');
+        const nextStageBtn = document.getElementById('next-stage-btn');
+        const viewTheoryBtn = document.getElementById('view-theory-btn');
+        const theoryContent = document.getElementById('theory-content');
+        const playAgainBtn = document.getElementById('play-again-btn');
+        const closeTheoryBtn = document.getElementById('close-theory-btn');
+
+        // --- Game Data ---
+        const gameSectors = [
+            {
+                sectorId: 1,
+                title: "Maximum Sum – Fixed Window (Basics)",
+                concept: "Introduction to the fundamental concept of a fixed-size sliding window to find the maximum sum in a subarray.",
+                levels: [
+                    {
+                        levelId: 1,
+                        problem: "A magical scroll contains exam scores. Find the maximum sum of 3 consecutive scores to unlock the next chamber.",
+                        array: [5, 1, 3, 2, 6, 7],
+                        windowSize: 3,
+                        solution: {
+                            bruteForceSteps: 4,
+                            slidingWindowSteps: 3,
+                            answer: 15
+                        }
+                    },
+                ]
+            },
+        ];
+
+        const theoryScrolls = {
+            s1l1_brute: `
+                <h4 class="font-cinzel text-xl text-red-400">Insight: Brute Force Magic</h4>
+                <p>You just experienced <strong class="text-red-300">O(n * k)</strong> complexity. In the world of algorithms, this represents a significant expenditure of magical energy.</p>
+                <p>Your spell involved two nested actions:</p>
+                <ul>
+                    <li>An outer loop to select the starting point of each window (n steps).</li>
+                    <li>An inner process to sum the 'k' elements within that window.</li>
+                </ul>
+                <p>For large scrolls (arrays), this method becomes exhausting and impractical. It works, but at a great cost to your energy reserves.</p>
+            `,
+            s1l1_sliding: `
+                <h4 class="font-cinzel text-xl text-green-400">Mastery: Sliding Window Magic</h4>
+                <p>You've now mastered <strong class="text-green-300">O(n)</strong> complexity, a mark of a true sorcerer. This is a far more efficient and powerful form of magic.</p>
+                <p>Instead of recalculating everything, you simply:</p>
+                <ul>
+                    <li>Calculated the sum of the first window once.</li>
+                    <li>For each subsequent step, you <strong class="text-red-400">banished</strong> the outgoing element and <strong class="text-green-400">summoned</strong> the incoming one.</li>
+                </ul>
+                <p>This single pass through the array maintains a perfect balance of energy, allowing you to solve vast problems with minimal effort. This principle of reusing work is key to advanced algorithm mastery.</p>
+            `
+        };
+
+        // --- Game State ---
+        let gameState = {
+            currentSector: 0,
+            currentLevel: 0,
+            currentStage: 'bruteForce', // 'bruteForce' or 'slidingWindow'
+            playerXP: 0,
+            playerEnergy: 100,
+            bruteForce: {
+                currentIndex: 0,
+                maxSum: -Infinity,
+                steps: 0,
+                costPerStep: 25,
+                mistakes: 0,
+                energyUsed: 0, // Track energy used in brute force stage
+                log: [],
+                isLogCollapsed: true,
+            },
+            slidingWindow: {
+                currentIndex: 0,
+                currentSum: 0,
+                maxSum: -Infinity,
+                steps: 0,
+                energyCost: 0,
+                mistakes: 0,
+                log: [],
+            }
+        };
+
+        // --- Sound System ---
+        class SoundManager {
+            constructor() {
+                this.sounds = {};
+                this.isMuted = false;
+                this.audioContext = null;
+                this.backgroundMusic = null;
+                this.ambientLoop = null;
+                this.energyWarningInterval = null;
+                this.consecutiveCorrects = 0;
+                this.audioInitialized = false;
+                
+                this.setupSoundToggle();
+            }
+
+            initializeAudioContext() {
+                if (this.audioInitialized) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.createSounds();
+                    this.audioInitialized = true;
+                    console.log('Audio context initialized');
+                } catch (e) {
+                    console.warn('Web Audio API not supported');
+                }
+            }
+
+            createSounds() {
+                // Create procedural sounds using Web Audio API
+                this.sounds = {
+                    // Background Ambience
+                    bruteForceAmbient: this.createBruteForceAmbient(),
+                    slidingWindowAmbient: this.createSlidingWindowAmbient(),
+                    
+                    // Player Actions
+                    correctInput: this.createCorrectSound(),
+                    incorrectInput: this.createIncorrectSound(),
+                    energyWarning: this.createEnergyWarningSound(),
+                    xpGain: this.createXpGainSound(),
+                    banish: this.createBanishSound(),
+                    summon: this.createSummonSound(),
+                    
+                    // Stage Events
+                    windowHighlight: this.createWindowHighlightSound(),
+                    bruteForceComplete: this.createBruteForceCompleteSound(),
+                    slidingWindowComplete: this.createSlidingWindowCompleteSound(),
+                    levelComplete: this.createLevelCompleteSound(),
+                    finalSummary: this.createFinalSummarySound()
+                };
+                
+                // Create continuous ambient background
+                this.createAmbientBackground();
+            }
+
+            createBruteForceAmbient() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(60, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(45, this.audioContext.currentTime + 2);
+                    
+                    gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.05, this.audioContext.currentTime + 2);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 2);
+                };
+            }
+
+            createSlidingWindowAmbient() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(660, this.audioContext.currentTime + 1);
+                    
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.03, this.audioContext.currentTime + 1);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 1);
+                };
+            }
+
+            createCorrectSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    this.consecutiveCorrects++;
+                    const pitch = 440 + (this.consecutiveCorrects * 50);
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(pitch, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(pitch * 1.5, this.audioContext.currentTime + 0.3);
+                    
+                    gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.3);
+                };
+            }
+
+            createIncorrectSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    this.consecutiveCorrects = 0;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 0.2);
+                    
+                    gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.2);
+                };
+            }
+
+            createEnergyWarningSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime + 0.2);
+                    
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime + 0.2);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.3);
+                };
+            }
+
+            createXpGainSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, this.audioContext.currentTime + 0.5);
+                    
+                    gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.5);
+                };
+            }
+
+            createBanishSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(300, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 0.4);
+                    
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.4);
+                };
+            }
+
+            createSummonSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.4);
+                    
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.4);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.4);
+                };
+            }
+
+            createWindowHighlightSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(1000, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, this.audioContext.currentTime + 0.2);
+                    
+                    gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 0.2);
+                };
+            }
+
+            createBruteForceCompleteSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 1);
+                    
+                    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 1);
+                };
+            }
+
+            createSlidingWindowCompleteSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.5);
+                    oscillator.frequency.exponentialRampToValueAtTime(1320, this.audioContext.currentTime + 1);
+                    
+                    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 1);
+                };
+            }
+
+            createLevelCompleteSound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(523, this.audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(659, this.audioContext.currentTime + 0.3);
+                    oscillator.frequency.setValueAtTime(784, this.audioContext.currentTime + 0.6);
+                    
+                    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime + 0.3);
+                    gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime + 0.6);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 1);
+                };
+            }
+
+            createFinalSummarySound() {
+                return () => {
+                    if (!this.audioContext || this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(330, this.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(440, this.audioContext.currentTime + 0.5);
+                    oscillator.frequency.exponentialRampToValueAtTime(660, this.audioContext.currentTime + 1);
+                    
+                    gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 1);
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.start();
+                    oscillator.stop(this.audioContext.currentTime + 1);
+                };
+            }
+
+            createAmbientBackground() {
+                if (!this.audioContext) return;
+                
+                // Create a memorable, melodic mystical soundtrack
+                this.ambientLayers = [];
+                this.ambientMelody = [];
+                this.ambientBass = [];
+                this.ambientPads = [];
+                
+                // Mystical scale: D minor pentatonic with some magical intervals
+                const mysticalScale = [146.83, 174.61, 196.00, 220.00, 246.94, 293.66, 329.63, 392.00]; // D, F, G, A, B, D, E, G
+                
+                // Create bass foundation with melodic progression
+                this.createMelodicBass(mysticalScale);
+                
+                // Create harmonic pads with gentle movement
+                this.createHarmonicPads(mysticalScale);
+                
+                // Create main melody that evolves
+                this.createEvolvingMelody(mysticalScale);
+                
+                // Create magical arpeggios
+                this.createMagicalArpeggios(mysticalScale);
+                
+                // Create atmospheric textures
+                this.createAtmosphericTextures();
+                
+                // Start all layers
+                [...this.ambientBass, ...this.ambientPads, ...this.ambientMelody].forEach(layer => {
+                    if (layer.oscillator && layer.oscillator.state !== 'running') {
+                        try {
+                            layer.oscillator.start();
+                        } catch (e) {
+                            console.warn('Oscillator start failed:', e);
+                        }
+                    }
+                });
+            }
+
+            createMelodicBass(scale) {
+                // Bass line that follows the mystical scale
+                const bassNotes = [scale[0], scale[2], scale[4], scale[1]]; // D, G, B, F
+                let noteIndex = 0;
+                
+                const playBassNote = () => {
+                    if (this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(bassNotes[noteIndex], this.audioContext.currentTime);
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.03, this.audioContext.currentTime + 0.5);
+                    gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 3);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    try {
+                        oscillator.start();
+                        oscillator.stop(this.audioContext.currentTime + 3);
+                    } catch (e) {
+                        console.warn('Bass oscillator start failed:', e);
+                    }
+                    
+                    noteIndex = (noteIndex + 1) % bassNotes.length;
+                    
+                    // Schedule next note
+                    setTimeout(playBassNote, 2000);
+                };
+                
+                playBassNote();
+            }
+
+            createHarmonicPads(scale) {
+                // Create two harmonic pad layers
+                const padNotes1 = [scale[1], scale[3], scale[5]]; // F, A, D
+                const padNotes2 = [scale[2], scale[4], scale[6]]; // G, B, E
+                
+                // First pad layer
+                padNotes1.forEach((note, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(note, this.audioContext.currentTime);
+                    
+                    // LFO for gentle movement
+                    lfo.type = 'sine';
+                    lfo.frequency.setValueAtTime(0.1 + index * 0.05, this.audioContext.currentTime);
+                    lfoGain.gain.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0.015, this.audioContext.currentTime);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    try {
+                        lfo.start();
+                        oscillator.start();
+                    } catch (e) {
+                        console.warn('Oscillator start failed:', e);
+                    }
+                    
+                    this.ambientPads.push({ oscillator, gainNode, filter, lfo, lfoGain });
+                });
+                
+                // Second pad layer (octave higher)
+                padNotes2.forEach((note, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(note * 2, this.audioContext.currentTime);
+                    
+                    // LFO for gentle movement
+                    lfo.type = 'sine';
+                    lfo.frequency.setValueAtTime(0.08 + index * 0.03, this.audioContext.currentTime);
+                    lfoGain.gain.setValueAtTime(1.5, this.audioContext.currentTime);
+                    
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1200, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.3, this.audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0.0125, this.audioContext.currentTime);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    try {
+                        lfo.start();
+                        oscillator.start();
+                    } catch (e) {
+                        console.warn('Oscillator start failed:', e);
+                    }
+                    
+                    this.ambientPads.push({ oscillator, gainNode, filter, lfo, lfoGain });
+                });
+            }
+
+            createEvolvingMelody(scale) {
+                // Main melody that evolves over time
+                const melodyPhrase1 = [scale[0], scale[2], scale[4], scale[6], scale[4], scale[2]]; // D, G, B, E, B, G
+                const melodyPhrase2 = [scale[1], scale[3], scale[5], scale[7], scale[5], scale[3]]; // F, A, D, G, D, A
+                const melodies = [melodyPhrase1, melodyPhrase2];
+                let melodyIndex = 0;
+                let noteIndex = 0;
+                
+                const playMelodyNote = () => {
+                    if (this.isMuted) return;
+                    
+                    const currentMelody = melodies[melodyIndex];
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(currentMelody[noteIndex] * 2, this.audioContext.currentTime);
+                    
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1500, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.02, this.audioContext.currentTime + 0.2);
+                    gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 1.5);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    try {
+                        oscillator.start();
+                        oscillator.stop(this.audioContext.currentTime + 1.5);
+                    } catch (e) {
+                        console.warn('Melody oscillator start failed:', e);
+                    }
+                    
+                    noteIndex++;
+                    if (noteIndex >= currentMelody.length) {
+                        noteIndex = 0;
+                        melodyIndex = (melodyIndex + 1) % melodies.length;
+                    }
+                    
+                    // Schedule next note
+                    setTimeout(playMelodyNote, 800);
+                };
+                
+                playMelodyNote();
+            }
+
+            createMagicalArpeggios(scale) {
+                // Magical arpeggios that add sparkle
+                const arpeggioNotes = [scale[0], scale[2], scale[4], scale[6]]; // D, G, B, E
+                let arpIndex = 0;
+                
+                const playArpeggio = () => {
+                    if (this.isMuted) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(arpeggioNotes[arpIndex] * 4, this.audioContext.currentTime);
+                    
+                    filter.type = 'highpass';
+                    filter.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 0.8);
+                    
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    try {
+                        oscillator.start();
+                        oscillator.stop(this.audioContext.currentTime + 0.8);
+                    } catch (e) {
+                        console.warn('Arpeggio oscillator start failed:', e);
+                    }
+                    
+                    arpIndex = (arpIndex + 1) % arpeggioNotes.length;
+                    
+                    // Schedule next arpeggio note
+                    setTimeout(playArpeggio, 400);
+                };
+                
+                playArpeggio();
+            }
+
+            createAtmosphericTextures() {
+                // Atmospheric textures for depth
+                const textureOscillator = this.audioContext.createOscillator();
+                const textureGain = this.audioContext.createGain();
+                const textureFilter = this.audioContext.createBiquadFilter();
+                const noiseBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 2, this.audioContext.sampleRate);
+                const noiseSource = this.audioContext.createBufferSource();
+                
+                // Create noise texture
+                const noiseData = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < noiseData.length; i++) {
+                    noiseData[i] = (Math.random() * 2 - 1) * 0.1;
+                }
+                
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+                
+                textureFilter.type = 'bandpass';
+                textureFilter.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                textureFilter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                
+                textureGain.gain.setValueAtTime(0.005, this.audioContext.currentTime);
+                
+                noiseSource.connect(textureFilter);
+                textureFilter.connect(textureGain);
+                textureGain.connect(this.audioContext.destination);
+                
+                try {
+                    noiseSource.start();
+                } catch (e) {
+                    console.warn('Noise source start failed:', e);
+                }
+                
+                this.ambientLayers.push({ oscillator: noiseSource, gainNode: textureGain, filter: textureFilter });
+            }
+
+            setupSoundToggle() {
+                const toggleBtn = document.getElementById('sound-toggle');
+                toggleBtn.addEventListener('click', () => {
+                    this.isMuted = !this.isMuted;
+                    toggleBtn.textContent = this.isMuted ? '🔇' : '🔊';
+                    toggleBtn.classList.toggle('muted', this.isMuted);
+                    
+                    if (this.isMuted) {
+                        this.stopBackgroundMusic();
+                        this.stopAmbientBackground();
+                    } else {
+                        this.startBackgroundMusic();
+                        this.startAmbientBackground();
+                    }
+                });
+            }
+
+            playSound(soundName) {
+                if (!this.audioInitialized) {
+                    this.initializeAudioContext();
+                }
+                
+                if (this.sounds[soundName] && !this.isMuted) {
+                    try {
+                        this.sounds[soundName]();
+                    } catch (e) {
+                        console.warn('Sound playback failed:', e);
+                    }
+                }
+            }
+
+            startBackgroundMusic() {
+                if (this.isMuted) return;
+                
+                if (!this.audioInitialized) {
+                    this.initializeAudioContext();
+                }
+                
+                this.stopBackgroundMusic();
+                
+                if (gameState.currentStage === 'bruteForce') {
+                    this.sounds.bruteForceAmbient();
+                } else {
+                    this.sounds.slidingWindowAmbient();
+                }
+            }
+
+            stopBackgroundMusic() {
+                if (this.backgroundMusic) {
+                    this.backgroundMusic.stop();
+                    this.backgroundMusic = null;
+                }
+            }
+
+            checkEnergyWarning() {
+                if (gameState.playerEnergy <= 30 && !this.isMuted) {
+                    this.sounds.energyWarning();
+                }
+            }
+
+            startAmbientBackground() {
+                if (this.isMuted) return;
+                
+                if (!this.audioInitialized) {
+                    this.initializeAudioContext();
+                }
+                
+                if (!this.audioContext) return;
+                
+                // Stop any existing ambient background first
+                this.stopAmbientBackground();
+                
+                // Create new ambient background
+                this.createAmbientBackground();
+                
+                // Set up continuous restart mechanism
+                this.ambientRestartInterval = setInterval(() => {
+                    if (!this.isMuted && this.audioContext) {
+                        // Check if any layers have stopped and restart them
+                        this.ambientLayers.forEach((layer, index) => {
+                            try {
+                                // Try to access the oscillator state
+                                if (layer.oscillator.state === 'finished' || layer.oscillator.state === 'stopped') {
+                                    // Restart this layer
+                                    const newOscillator = this.audioContext.createOscillator();
+                                    const newGainNode = this.audioContext.createGain();
+                                    const newFilter = this.audioContext.createBiquadFilter();
+                                    const newCompressor = this.audioContext.createDynamicsCompressor();
+                                    
+                                    // Copy settings from the original layer
+                                    newOscillator.type = layer.oscillator.type;
+                                    newOscillator.frequency.setValueAtTime(layer.oscillator.frequency.value, this.audioContext.currentTime);
+                                    newOscillator.detune.setValueAtTime(layer.oscillator.detune.value, this.audioContext.currentTime);
+                                    
+                                    newFilter.type = layer.filter.type;
+                                    newFilter.frequency.setValueAtTime(layer.filter.frequency.value, this.audioContext.currentTime);
+                                    newFilter.Q.setValueAtTime(layer.filter.Q.value, this.audioContext.currentTime);
+                                    
+                                    newCompressor.threshold.setValueAtTime(layer.compressor.threshold.value, this.audioContext.currentTime);
+                                    newCompressor.knee.setValueAtTime(layer.compressor.knee.value, this.audioContext.currentTime);
+                                    newCompressor.ratio.setValueAtTime(layer.compressor.ratio.value, this.audioContext.currentTime);
+                                    newCompressor.attack.setValueAtTime(layer.compressor.attack.value, this.audioContext.currentTime);
+                                    newCompressor.release.setValueAtTime(layer.compressor.release.value, this.audioContext.currentTime);
+                                    
+                                    newGainNode.gain.setValueAtTime(layer.gainNode.gain.value, this.audioContext.currentTime);
+                                    
+                                    newOscillator.connect(newFilter);
+                                    newFilter.connect(newCompressor);
+                                    newCompressor.connect(newGainNode);
+                                    newGainNode.connect(this.audioContext.destination);
+                                    
+                                    newOscillator.start();
+                                    
+                                    // Replace the old layer
+                                    this.ambientLayers[index] = { 
+                                        oscillator: newOscillator, 
+                                        gainNode: newGainNode, 
+                                        filter: newFilter, 
+                                        compressor: newCompressor 
+                                    };
+                                }
+                            } catch (e) {
+                                // Layer is in an invalid state, recreate it
+                                console.log('Recreating ambient layer', index);
+                            }
+                        });
+                    }
+                }, 10000); // Check every 10 seconds
+            }
+
+            stopAmbientBackground() {
+                // Clear the restart interval
+                if (this.ambientRestartInterval) {
+                    clearInterval(this.ambientRestartInterval);
+                    this.ambientRestartInterval = null;
+                }
+                
+                // Stop all ambient layers
+                const allLayers = [
+                    ...(this.ambientLayers || []),
+                    ...(this.ambientBass || []),
+                    ...(this.ambientPads || []),
+                    ...(this.ambientMelody || [])
+                ];
+                
+                allLayers.forEach(layer => {
+                    try {
+                        if (layer.oscillator) layer.oscillator.stop();
+                        if (layer.lfo) layer.lfo.stop();
+                    } catch (e) {
+                        // Oscillator might already be stopped
+                    }
+                });
+                
+                // Clear all arrays
+                this.ambientLayers = [];
+                this.ambientBass = [];
+                this.ambientPads = [];
+                this.ambientMelody = [];
+            }
+        }
+
+        // Initialize sound manager
+        let soundManager;
+
+        // --- Game Logic ---
+
+        function initializeGame() {
+            // Initialize sound manager
+            soundManager = new SoundManager();
+            
+            startGameBtn.addEventListener('click', startGame);
+            nextStageBtn.addEventListener('click', advanceStage);
+            toggleLogBtn.addEventListener('click', toggleLogVisibility);
+            
+            closeTheoryBtn.addEventListener('click', () => {
+                theoryScrollModal.classList.add('hidden');
+                // Check if we are on the brute force completion modal and unlock the next stage button
+                if (gameState.currentStage === 'bruteForce' && !levelCompleteModal.classList.contains('hidden')) {
+                    const nextBtn = document.getElementById('next-stage-btn');
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    nextBtn.textContent = "Proceed to Advanced Magic";
+                    
+                    const hint = document.getElementById('unlock-hint');
+                    if (hint) hint.remove();
+                }
+            });
+
+            playAgainBtn.addEventListener('click', () => {
+                finalSummaryModal.classList.add('hidden');
+                // Reset everything for a new game
+                gameState.currentStage = 'bruteForce';
+                gameState.playerXP = 0;
+                updateUI();
+                gameScreen.classList.add('hidden');
+                welcomeScreen.classList.remove('hidden', 'fade-out');
+                welcomeScreen.classList.add('fade-in');
+            });
+        }
+
+        function toggleLogVisibility() {
+            const content = document.getElementById('sums-log-content');
+            const icon = toggleLogBtn.querySelector('svg');
+            content.classList.toggle('hidden');
+            if (content.classList.contains('hidden')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function startGame() {
+            console.log('startGame called');
+            try {
+                soundManager.playSound('levelComplete'); // Welcome to game sound
+                console.log('Sound played');
+            } catch (e) {
+                console.warn('Sound error:', e);
+            }
+            
+            try {
+                soundManager.startBackgroundMusic(); // Start background music
+                console.log('Background music started');
+            } catch (e) {
+                console.warn('Background music error:', e);
+            }
+            
+            try {
+                soundManager.startAmbientBackground(); // Start continuous ambient background
+                console.log('Ambient background started');
+            } catch (e) {
+                console.warn('Ambient background error:', e);
+            }
+            
+            console.log('Adding fade-out class');
+            welcomeScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                console.log('Timeout executed - transitioning to game screen');
+                welcomeScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                gameScreen.classList.add('fade-in');
+                console.log('About to call loadLevel');
+                loadLevel();
+            }, 500);
+        }
+
+        function loadLevel() {
+            console.log('loadLevel called');
+            try {
+                const sector = gameSectors[gameState.currentSector];
+                const level = sector.levels[gameState.currentLevel];
+                console.log('Sector and level loaded:', sector.title, level.problem);
+
+                sectorTitle.textContent = sector.title;
+                problemDescription.textContent = level.problem;
+            
+                // Calculate dynamic energy costs for the level
+                const totalBruteForceSteps = level.array.length - level.windowSize + 1;
+                gameState.bruteForce.costPerStep = 100 / totalBruteForceSteps;
+                console.log('Energy costs calculated');
+
+                resetGameStateForStage();
+                updateUI();
+                console.log('Game state reset and UI updated');
+                
+                if (gameState.currentStage === 'bruteForce') {
+                    levelTitle.textContent = `Level ${sector.sectorId}.${level.levelId}.1: Brute Force Magic`;
+                    console.log('Starting brute force stage');
+                    startBruteForceStage();
+                } else {
+                    levelTitle.textContent = `Level ${sector.sectorId}.${level.levelId}.2: Sliding Window Magic`;
+                    console.log('Starting sliding window stage');
+                    startSlidingWindowStage();
+                }
+            } catch (e) {
+                console.error('Error in loadLevel:', e);
+            }
+        }
+
+        function resetGameStateForStage() {
+            gameState.playerEnergy = 100;
+            if (gameState.currentStage === 'bruteForce') {
+                gameState.bruteForce.currentIndex = 0;
+                gameState.bruteForce.maxSum = -Infinity;
+                gameState.bruteForce.steps = 0;
+                gameState.bruteForce.mistakes = 0;
+                gameState.bruteForce.log = [];
+                gameState.bruteForce.isLogCollapsed = true;
+            } else {
+                gameState.slidingWindow.currentIndex = 0;
+                gameState.slidingWindow.currentSum = 0;
+                gameState.slidingWindow.maxSum = -Infinity;
+                gameState.slidingWindow.steps = 0;
+                gameState.slidingWindow.energyCost = 0;
+                gameState.slidingWindow.mistakes = 0;
+                gameState.slidingWindow.log = [];
+            }
+            renderSumLog(); // Clear the log visually
+        }
+
+        function updateUI() {
+            energyBar.style.width = `${gameState.playerEnergy}%`;
+            xpBar.style.width = `${gameState.playerXP}%`;
+            
+            if (gameState.playerEnergy < 30) {
+                energyBar.className = 'bg-red-500 h-full rounded-full progress-bar-fill';
+                soundManager.checkEnergyWarning();
+            } else if (gameState.playerEnergy < 60) {
+                energyBar.className = 'bg-yellow-500 h-full rounded-full progress-bar-fill';
+            } else {
+                energyBar.className = 'bg-green-500 h-full rounded-full progress-bar-fill';
+            }
+        }
+
+        function renderArray() {
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            arrayContainer.innerHTML = '';
+            level.array.forEach((num, index) => {
+                const el = document.createElement('div');
+                el.textContent = num;
+                el.className = 'array-element text-2xl md:text-3xl font-bold border-2 border-violet-500/50 bg-violet-900/40 w-16 h-16 rounded-lg flex items-center justify-center';
+                el.dataset.index = index;
+                arrayContainer.appendChild(el);
+            });
+        }
+
+        function highlightWindow(startIndex, windowSize) {
+            soundManager.playSound('windowHighlight');
+            document.querySelectorAll('.array-element').forEach(el => {
+                el.classList.remove('highlight');
+            });
+
+            for (let i = 0; i < windowSize; i++) {
+                const el = document.querySelector(`.array-element[data-index='${startIndex + i}']`);
+                if (el) {
+                    el.classList.add('highlight');
+                }
+            }
+        }
+
+        // --- Brute Force Stage Logic ---
+        function startBruteForceStage() {
+            renderArray();
+            highlightWindow(0, gameSectors[gameState.currentSector].levels[gameState.currentLevel].windowSize);
+            promptForBruteForceInput();
+        }
+
+        function promptForBruteForceInput() {
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            const { currentIndex } = gameState.bruteForce;
+            const window = level.array.slice(currentIndex, currentIndex + level.windowSize);
+
+            interactionArea.innerHTML = `
+                <p class="mb-4 text-lg">Calculate the sum of the highlighted window: <span class="font-bold text-yellow-300">[${window.join(', ')}]</span></p>
+                <input id="sum-input" type="number" class="bg-gray-900/50 border border-violet-500 rounded-lg p-2 text-center text-xl w-40" placeholder="Enter sum" autofocus>
+                <button id="submit-sum-btn" class="btn-primary text-white font-bold py-2 px-6 rounded-lg ml-4">Cast Spell</button>
+                <p id="feedback-message" class="mt-2 h-6"></p>
+            `;
+            
+            document.getElementById('sum-input').focus();
+            document.getElementById('submit-sum-btn').addEventListener('click', checkBruteForceSum);
+            document.getElementById('sum-input').addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') checkBruteForceSum();
+            });
+        }
+
+        function checkBruteForceSum() {
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            const { currentIndex } = gameState.bruteForce;
+            const input = document.getElementById('sum-input');
+            const feedback = document.getElementById('feedback-message');
+            const userSum = parseInt(input.value);
+
+            const window = level.array.slice(currentIndex, currentIndex + level.windowSize);
+            const correctSum = window.reduce((a, b) => a + b, 0);
+
+            // Disable button to prevent double submission
+            document.getElementById('submit-sum-btn').disabled = true;
+
+            // Log the attempt regardless of correctness
+            gameState.bruteForce.log.push({
+                window: window,
+                sum: userSum || '?', // Handle empty input
+                isCorrect: userSum === correctSum
+            });
+            renderSumLog();
+
+            if (userSum === correctSum) {
+                soundManager.playSound('correctInput');
+                feedback.textContent = 'Correct!';
+                feedback.className = 'mt-2 h-6 text-green-400';
+                gameState.bruteForce.maxSum = Math.max(gameState.bruteForce.maxSum, userSum);
+                gameState.bruteForce.steps++;
+                gameState.playerEnergy -= gameState.bruteForce.costPerStep;
+                gameState.bruteForce.energyUsed += gameState.bruteForce.costPerStep;
+                updateUI();
+                
+                gameState.bruteForce.currentIndex++;
+                if (gameState.bruteForce.currentIndex <= level.array.length - level.windowSize) {
+                     setTimeout(() => {
+                        highlightWindow(gameState.bruteForce.currentIndex, level.windowSize);
+                        promptForBruteForceInput();
+                    }, 1000);
+                } else {
+                    setTimeout(() => showLevelCompleteModal(true), 1000);
+                }
+            } else {
+                soundManager.playSound('incorrectInput');
+                feedback.textContent = 'Incorrect calculation. Try again.';
+                feedback.className = 'mt-2 h-6 text-red-400';
+                gameState.bruteForce.mistakes++;
+                input.value = '';
+                input.focus();
+                document.getElementById('submit-sum-btn').disabled = false;
+            }
+        }
+
+        // --- Sliding Window Stage Logic ---
+        function startSlidingWindowStage() {
+            renderArray();
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            const { windowSize } = level;
+
+            const initialSum = level.array.slice(0, windowSize).reduce((a, b) => a + b, 0);
+            gameState.slidingWindow.currentSum = initialSum;
+            gameState.slidingWindow.maxSum = initialSum;
+            gameState.slidingWindow.currentIndex = 0;
+
+            highlightWindow(0, windowSize);
+            promptForSlidingWindowInput();
+        }
+
+        function promptForSlidingWindowInput() {
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            const { currentIndex, currentSum } = gameState.slidingWindow;
+
+            if (currentIndex === 0) {
+                interactionArea.innerHTML = `
+                    <p class="mb-4 text-lg">Calculate the sum of the initial window: <span class="font-bold text-yellow-300">[${level.array.slice(0, level.windowSize).join(', ')}]</span></p>
+                    <input id="sum-input" type="number" class="bg-gray-900/50 border border-violet-500 rounded-lg p-2 text-center text-xl w-40" placeholder="Enter sum" autofocus>
+                    <button id="submit-sum-btn" class="btn-primary text-white font-bold py-2 px-6 rounded-lg ml-4">Cast Spell</button>
+                    <p id="feedback-message" class="mt-2 h-6"></p>
+                `;
+                document.getElementById('submit-sum-btn').addEventListener('click', checkInitialSlidingSum);
+                document.getElementById('sum-input').addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') checkInitialSlidingSum();
+                });
+            } else {
+                const outgoingElement = level.array[currentIndex - 1];
+                const incomingElement = level.array[currentIndex + level.windowSize - 1];
+
+                // Animate the banish/summon visual
+                const outgoingEl = document.querySelector(`.array-element[data-index='${currentIndex - 1}']`);
+                if(outgoingEl) {
+                    outgoingEl.classList.add('banish');
+                    soundManager.playSound('banish');
+                }
+
+                setTimeout(() => {
+                    const incomingEl = document.querySelector(`.array-element[data-index='${currentIndex + level.windowSize - 1}']`);
+                    if(incomingEl) {
+                        incomingEl.classList.add('summon');
+                        soundManager.playSound('summon');
+                    }
+                    highlightWindow(currentIndex, level.windowSize);
+                }, 750);
+                
+                setTimeout(() => {
+                    if(outgoingEl) outgoingEl.classList.remove('banish');
+                    const incomingEl = document.querySelector(`.array-element[data-index='${currentIndex + level.windowSize - 1}']`);
+                    if(incomingEl) incomingEl.classList.remove('summon');
+                }, 1500);
+
+
+                interactionArea.innerHTML = `
+                    <p class="text-lg mb-2">Previous sum: <span class="font-bold">${currentSum}</span></p>
+                    <p class="text-lg mb-4">
+                        <span class="text-red-400">Banish ${outgoingElement}</span> and 
+                        <span class="text-green-400">Summon ${incomingElement}</span>.
+                        What is the new sum?
+                    </p>
+                    <input id="sum-input" type="number" class="bg-gray-900/50 border border-violet-500 rounded-lg p-2 text-center text-xl w-40" placeholder="New sum" autofocus>
+                    <button id="submit-sum-btn" class="btn-primary text-white font-bold py-2 px-6 rounded-lg ml-4">Adjust Spell</button>
+                    <p id="feedback-message" class="mt-2 h-6"></p>
+                `;
+                document.getElementById('submit-sum-btn').addEventListener('click', checkSlidingWindowSum);
+                document.getElementById('sum-input').addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') checkSlidingWindowSum();
+                });
+            }
+            document.getElementById('sum-input').focus();
+        }
+
+        function checkInitialSlidingSum() {
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            const input = document.getElementById('sum-input');
+            const feedback = document.getElementById('feedback-message');
+            const userSum = parseInt(input.value);
+            const window = level.array.slice(0, level.windowSize);
+            
+            // Disable button
+            document.getElementById('submit-sum-btn').disabled = true;
+
+             // Log the attempt
+            gameState.slidingWindow.log.push({
+                window: window,
+                sum: userSum || '?',
+                isCorrect: userSum === gameState.slidingWindow.currentSum
+            });
+            renderSumLog();
+            
+            if (userSum === gameState.slidingWindow.currentSum) {
+                feedback.textContent = 'Correct! Initial sum set.';
+                feedback.className = 'mt-2 h-6 text-green-400';
+                gameState.slidingWindow.steps++;
+                
+                const initialCost = 10; // Flat cost for the first calculation
+                gameState.playerEnergy -= initialCost;
+                gameState.slidingWindow.energyCost += initialCost;
+                
+                updateUI();
+
+                gameState.slidingWindow.currentIndex++;
+                setTimeout(() => {
+                    promptForSlidingWindowInput();
+                }, 1500);
+            } else {
+                soundManager.playSound('incorrectInput');
+                feedback.textContent = 'Incorrect initial sum. Try again.';
+                feedback.className = 'mt-2 h-6 text-red-400';
+                gameState.slidingWindow.mistakes++;
+                input.value = '';
+                input.focus();
+                document.getElementById('submit-sum-btn').disabled = false;
+            }
+        }
+
+        function checkSlidingWindowSum() {
+            const level = gameSectors[gameState.currentSector].levels[gameState.currentLevel];
+            const { currentIndex, currentSum } = gameState.slidingWindow;
+            const input = document.getElementById('sum-input');
+            const feedback = document.getElementById('feedback-message');
+            const userSum = parseInt(input.value);
+
+            // Disable button
+            document.getElementById('submit-sum-btn').disabled = true;
+
+            const outgoingElement = level.array[currentIndex - 1];
+            const incomingElement = level.array[currentIndex + level.windowSize - 1];
+            const correctSum = currentSum - outgoingElement + incomingElement;
+
+            // Log the attempt
+            gameState.slidingWindow.log.push({
+                window: level.array.slice(currentIndex, currentIndex + level.windowSize),
+                sum: userSum || '?',
+                isCorrect: userSum === correctSum,
+                isSliding: true,
+                change: { out: outgoingElement, in: incomingElement }
+            });
+            renderSumLog();
+            
+            if (userSum === correctSum) {
+                soundManager.playSound('correctInput');
+                feedback.textContent = 'Perfect adjustment!';
+                feedback.className = 'mt-2 h-6 text-green-400';
+                
+                gameState.slidingWindow.currentSum = correctSum;
+                gameState.slidingWindow.maxSum = Math.max(gameState.slidingWindow.maxSum, correctSum);
+                gameState.slidingWindow.steps++;
+
+                const slideCost = 2; // Minimal cost for an efficient adjustment
+                gameState.playerEnergy -= slideCost;
+                gameState.slidingWindow.energyCost += slideCost;
+
+                updateUI();
+
+                gameState.slidingWindow.currentIndex++;
+                if (gameState.slidingWindow.currentIndex <= level.array.length - level.windowSize) {
+                     setTimeout(() => {
+                        promptForSlidingWindowInput();
+                    }, 1500);
+                } else {
+                     setTimeout(() => showLevelCompleteModal(false), 1000);
+                }
+            } else {
+                soundManager.playSound('incorrectInput');
+                feedback.textContent = 'That calculation is not quite right.';
+                feedback.className = 'mt-2 h-6 text-red-400';
+                gameState.slidingWindow.mistakes++;
+                input.value = '';
+                input.focus();
+                document.getElementById('submit-sum-btn').disabled = false;
+            }
+        }
+
+        // --- Modal and Stage Progression ---
+        function showLevelCompleteModal(isBruteForce) {
+            if (isBruteForce) {
+                soundManager.playSound('bruteForceComplete');
+            } else {
+                soundManager.playSound('slidingWindowComplete');
+            }
+            
+            const title = document.getElementById('level-complete-title');
+            const summary = document.getElementById('level-complete-summary');
+            const statsSteps = document.getElementById('stats-steps');
+            const statsEnergy = document.getElementById('stats-energy');
+            const statsMistakes = document.getElementById('stats-mistakes');
+
+            // Clean up any previous hint text
+            const oldHint = document.getElementById('unlock-hint');
+            if (oldHint) oldHint.remove();
+
+            if (isBruteForce) {
+                title.textContent = "Brute Force Complete";
+                summary.textContent = `You found the maximum sum: ${gameState.bruteForce.maxSum}. Now, witness true efficiency.`;
+                statsSteps.textContent = gameState.bruteForce.steps;
+                statsEnergy.textContent = `${gameState.bruteForce.energyUsed}`;
+                statsEnergy.className = 'text-2xl font-bold text-red-400';
+                statsMistakes.textContent = gameState.bruteForce.mistakes;
+                
+                nextStageBtn.textContent = "Learn Advanced Magic";
+                nextStageBtn.disabled = true;
+                nextStageBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                // Add a hint to guide the player
+                const hint = document.createElement('p');
+                hint.id = 'unlock-hint';
+                hint.className = 'text-xs text-gray-400 mt-2';
+                hint.textContent = 'View the Theory Scroll to unlock the next stage.';
+                nextStageBtn.parentElement.insertBefore(hint, viewTheoryBtn.nextSibling);
+
+
+                viewTheoryBtn.onclick = () => showTheoryScroll('s1l1_brute');
+            } else {
+                title.textContent = "Sector 1 Complete!";
+                summary.textContent = `Excellent work! You found the maximum sum: ${gameState.slidingWindow.maxSum} with elegant efficiency.`;
+                statsSteps.textContent = gameState.slidingWindow.steps;
+                
+                statsEnergy.textContent = `${gameState.slidingWindow.energyCost}`;
+                statsEnergy.className = 'text-2xl font-bold text-green-400';
+                statsMistakes.textContent = gameState.slidingWindow.mistakes;
+
+                nextStageBtn.textContent = "Continue Training";
+                
+                // Ensure button is enabled for this stage
+                nextStageBtn.disabled = false;
+                nextStageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                viewTheoryBtn.onclick = () => showTheoryScroll('s1l1_sliding');
+                
+                // Award XP and show visual feedback
+                const xpToAward = calculateXP('slidingWindow', gameState.slidingWindow.mistakes, true);
+                if(gameState.playerXP < xpToAward) { // Prevent awarding XP twice on replay
+                    gameState.playerXP += xpToAward;
+                    showXpGain(xpToAward);
+                }
+                updateUI();
+            }
+
+            // Finalize log by highlighting the max sum
+            const stageState = isBruteForce ? gameState.bruteForce : gameState.slidingWindow;
+            const maxSum = stageState.maxSum;
+            stageState.log.forEach(entry => {
+                if (entry.sum === maxSum && entry.isCorrect) {
+                    entry.isMax = true;
+                }
+            });
+            renderSumLog();
+
+            levelCompleteModal.classList.remove('hidden');
+        }
+
+        function showTheoryScroll(scrollId) {
+            theoryContent.innerHTML = theoryScrolls[scrollId];
+            theoryScrollModal.classList.remove('hidden');
+        }
+
+        function renderSumLog(fullLog = false) {
+            const stageState = gameState[gameState.currentStage];
+            if (!stageState) return;
+
+            const LOG_COLLAPSE_THRESHOLD = 7;
+            const LOG_VISIBLE_COUNT = 5;
+            let logEntries = stageState.log;
+            let showCollapseButton = false;
+
+            if (stageState === gameState.bruteForce && stageState.log.length > LOG_COLLAPSE_THRESHOLD && !fullLog) {
+                logEntries = stageState.log.slice(stageState.log.length - LOG_VISIBLE_COUNT);
+                showCollapseButton = true;
+            }
+
+            let html = logEntries.map((entry, index) => {
+                const originalIndex = stageState.log.indexOf(entry);
+                const isLatestEntry = originalIndex === stageState.log.length - 1;
+                let classes = "p-2 rounded-md transition-all duration-300 ";
+                let sumText = `Sum: ${entry.sum}`;
+                let changeText = '';
+                let id = isLatestEntry ? 'id="latest-log-entry"' : '';
+
+
+                if (!entry.isCorrect) {
+                    classes += "bg-red-900/50 text-red-300";
+                    sumText = `<span class="line-through">Sum: ${entry.sum}</span> (Incorrect)`;
+                } else {
+                    sumText = `Sum: <strong class="font-bold">${entry.sum}</strong>`;
+                    if (entry.isMax) {
+                        classes += "bg-yellow-800/50 ring-2 ring-yellow-400 text-yellow-200";
+                        sumText += " (Max)";
+                    } else if (isLatestEntry) {
+                        classes += "bg-violet-800/60";
+                    } else {
+                         classes += "bg-gray-800/50";
+                    }
+                }
+                
+                const windowText = `Window [${entry.window.join(', ')}]`;
+                
+                if (entry.isSliding && entry.change) {
+                    changeText = ` <span class="text-xs text-gray-400">(banish ${entry.change.out}, summon ${entry.change.in})</span>`;
+                }
+
+                return `<div ${id} class="${classes}">${windowText} → ${sumText}${changeText}</div>`;
+            }).join('');
+
+            if (showCollapseButton) {
+                const hiddenCount = stageState.log.length - LOG_VISIBLE_COUNT;
+                const buttonHtml = `<button id="show-more-logs-btn" class="w-full text-center p-2 bg-gray-700/50 hover:bg-gray-700 rounded-md text-violet-300 text-xs">Show ${hiddenCount} older entries...</button>`;
+                html = buttonHtml + html;
+            }
+
+            sumsLogContent.innerHTML = html;
+
+            if (showCollapseButton) {
+                document.getElementById('show-more-logs-btn').addEventListener('click', () => renderSumLog(true));
+            }
+
+            // Highlight the latest entry
+            const latestEntryEl = document.getElementById('latest-log-entry');
+            if (latestEntryEl) {
+                latestEntryEl.classList.add('log-entry-highlight');
+            }
+
+            // Auto-scroll to the bottom
+            sumsLogContent.scrollTop = sumsLogContent.scrollHeight;
+        }
+
+        function showFinalSummary() {
+            soundManager.playSound('finalSummary');
+            // Populate the modal with data from gameState
+            document.getElementById('summary-bf-steps').textContent = gameState.bruteForce.log.filter(e => e.isCorrect).length;
+            document.getElementById('summary-bf-energy').textContent = gameState.bruteForce.energyUsed;
+            document.getElementById('summary-bf-mistakes').textContent = gameState.bruteForce.mistakes;
+
+            document.getElementById('summary-sw-steps').textContent = gameState.slidingWindow.log.filter(e => e.isCorrect).length;
+            document.getElementById('summary-sw-energy').textContent = gameState.slidingWindow.energyCost;
+            document.getElementById('summary-sw-mistakes').textContent = gameState.slidingWindow.mistakes;
+
+
+            finalSummaryModal.classList.remove('hidden');
+        }
+
+        function showXpGain(amount) {
+            soundManager.playSound('xpGain');
+            const popup = document.getElementById('xp-popup');
+            popup.textContent = `+${amount} XP`;
+            
+            // Reset animation
+            popup.classList.remove('hidden', 'xp-popup-animate');
+            
+            // Trigger reflow to restart animation
+            void popup.offsetWidth; 
+            
+            popup.classList.add('xp-popup-animate');
+
+            setTimeout(() => {
+                popup.classList.add('hidden');
+            }, 1500);
+        }
+
+        function calculateXP(stage, mistakes, isCorrect) {
+            let baseXP = 25;
+            
+            // Difficulty scaling based on stage
+            if (stage === 'slidingWindow') {
+                baseXP = 35; // Sliding window is more advanced
+            }
+            
+            // Bonus for no mistakes
+            if (mistakes === 0) {
+                baseXP += 15; // Perfect performance bonus
+            } else if (mistakes <= 2) {
+                baseXP += 5; // Good performance bonus
+            }
+            
+            // Penalty for many mistakes
+            if (mistakes > 5) {
+                baseXP = Math.max(10, baseXP - (mistakes - 5) * 3);
+            }
+            
+            return baseXP;
+        }
+
+        function advanceStage() {
+            levelCompleteModal.classList.add('hidden');
+
+            if (gameState.currentStage === 'bruteForce') {
+                gameState.currentStage = 'slidingWindow';
+                soundManager.startBackgroundMusic(); // Switch to sliding window ambient
+                loadLevel();
+            } else {
+                showFinalSummary();
+            }
+        }
+
+        // --- Initializer ---
+        document.addEventListener('DOMContentLoaded', initializeGame);
+    </script>
+</body>
+</html>
+
